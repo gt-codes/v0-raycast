@@ -6,6 +6,8 @@ import ChatDetail from "./components/ChatDetail";
 import AddMessage from "./components/AddMessage";
 import { useNavigation } from "@raycast/api";
 import type { ForkChatResponse } from "./types";
+import AssignProjectForm from "./components/AssignProjectForm";
+import { useProjects } from "./lib/projects";
 
 export default function Command() {
   const apiKey = ensureApiKey();
@@ -17,6 +19,8 @@ export default function Command() {
     },
     parseResponse: (response) => response.json(),
   });
+
+  const { projects } = useProjects();
 
   const deleteChat = async (chatId: string, chatTitle: string) => {
     const toast = await showToast({
@@ -167,6 +171,12 @@ export default function Command() {
   };
 
   const getChatSubtitle = (chat: ChatSummary) => {
+    if (chat.projectId) {
+      const assignedProject = projects.find((project) => project.id === chat.projectId);
+      if (assignedProject) {
+        return `Project: ${assignedProject.name}`;
+      }
+    }
     if (chat.latestVersion?.status) {
       return `Status: ${chat.latestVersion.status}`;
     }
@@ -231,6 +241,12 @@ export default function Command() {
                     icon={Icon.Trash}
                     style={Action.Style.Destructive}
                     onAction={() => deleteChat(chat.id, chat.title || "Untitled Chat")}
+                  />
+                  <Action.Push
+                    title="Assign Project"
+                    icon={Icon.Tag}
+                    target={<AssignProjectForm chat={chat} revalidateChats={mutate} />}
+                    shortcut={{ modifiers: ["cmd", "shift"], key: "a" }}
                   />
                 </ActionPanel.Section>
               </ActionPanel>

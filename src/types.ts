@@ -6,16 +6,19 @@ export interface FindChatsResponse {
 export interface ChatSummary {
   id: string;
   object: "chat";
-  shareable: boolean;
-  privacy: string;
   title?: string;
+  createdAt: string;
   updatedAt: string;
   favorite: boolean;
+  shareable: boolean;
+  privacy: string;
   authorId: string;
   latestVersion?: {
     id: string;
+    object: "chat_version";
     status: "pending" | "completed" | "failed";
   };
+  projectId?: string;
 }
 
 export interface ChatDetailResponse {
@@ -172,4 +175,29 @@ export interface CreateMessageResponse {
     imageGenerations?: boolean;
     thinking?: boolean;
   };
+}
+
+export interface Response {
+  object: "project";
+  id: string;
+  assigned: true;
+}
+
+export interface ProjectDetail {
+  id: string;
+  object: "project";
+  name: string;
+  vercelProjectId?: string;
+}
+
+export interface FindProjectsResponse {
+  object: "list";
+  data: ProjectDetail[];
+}
+
+export interface CreateProjectResponse {
+  id: string;
+  object: "project";
+  name: string;
+  vercelProjectId?: string;
 }
