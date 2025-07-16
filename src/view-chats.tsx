@@ -57,6 +57,43 @@ export default function Command() {
     }
   };
 
+  const favoriteChat = async (chatId: string, isFavorite: boolean) => {
+    const toast = await showToast({
+      style: Toast.Style.Animated,
+      title: isFavorite ? "Favoriting chat..." : "Unfavoriting chat...",
+    });
+
+    try {
+      await mutate(
+        fetch(`https://api.v0.dev/v1/chats/${chatId}/favorite`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ isFavorite }),
+        }),
+        {
+          optimisticUpdate(data) {
+            if (!data) return data;
+            return {
+              ...data,
+              data: data.data.map((chat) => (chat.id === chatId ? { ...chat, favorite: isFavorite } : chat)),
+            };
+          },
+          rollbackOnError: true,
+        },
+      );
+      toast.style = Toast.Style.Success;
+      toast.title = isFavorite ? "Chat Favorited" : "Chat Unfavorited";
+      toast.message = `Chat has been ${isFavorite ? "favorited" : "unfavorited"} successfully.`;
+    } catch (error) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Favorite Failed";
+      toast.message = error instanceof Error ? error.message : "Failed to favorite chat";
+    }
+  };
+
   if (error) {
     return <Detail markdown={`Error: ${error.message}`} />;
   }
@@ -94,42 +131,60 @@ export default function Command() {
 
   return (
     <List navigationTitle="v0 Chats" searchBarPlaceholder="Search your chats...">
-      {data?.data.map((chat: ChatSummary) => (
-        <List.Item
-          key={chat.id}
-          icon={getChatIcon(chat)}
-          title={chat.title || "Untitled Chat"}
-          subtitle={getChatSubtitle(chat)}
-          accessories={[
-            {
-              text: new Date(chat.updatedAt).toLocaleDateString(),
-              tooltip: "Last updated",
-            },
-            ...(chat.favorite ? [{ icon: Icon.Star, tooltip: "Favorite" }] : []),
-          ]}
-          actions={
-            <ActionPanel>
-              <Action.Push title="Show Details" target={<ChatDetail chatId={chat.id} />} icon={Icon.Eye} />
-              <Action.Push
-                title="Add Message"
-                target={<AddMessage chatId={chat.id} chatTitle={chat.title} />}
-                icon={Icon.Plus}
-                shortcut={{ modifiers: ["cmd"], key: "n" }}
-              />
-              <Action.OpenInBrowser url={`https://v0.dev/chat/${chat.id}`} title="View in Browser" icon={Icon.Globe} />
-              <Action.CopyToClipboard content={chat.id} title="Copy Chat ID" icon={Icon.CopyClipboard} />
-              <ActionPanel.Section>
-                <Action
-                  title="Delete Chat"
-                  icon={Icon.Trash}
-                  style={Action.Style.Destructive}
-                  onAction={() => deleteChat(chat.id, chat.title || "Untitled Chat")}
+      {data?.data
+        .sort((a, b) => {
+          // Sort favorited chats to the top
+          if (a.favorite && !b.favorite) return -1;
+          if (!a.favorite && b.favorite) return 1;
+          // Maintain original order for non-favorited chats, or sort by updatedAt for favorited chats
+          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+        })
+        .map((chat: ChatSummary) => (
+          <List.Item
+            key={chat.id}
+            icon={getChatIcon(chat)}
+            title={chat.title || "Untitled Chat"}
+            subtitle={getChatSubtitle(chat)}
+            accessories={[
+              {
+                text: new Date(chat.updatedAt).toLocaleDateString(),
+                tooltip: "Last updated",
+              },
+              ...(chat.favorite ? [{ icon: Icon.Star, tooltip: "Favorite" }] : []),
+            ]}
+            actions={
+              <ActionPanel>
+                <Action.Push title="Show Details" target={<ChatDetail chatId={chat.id} />} icon={Icon.Eye} />
+                <Action.Push
+                  title="Add Message"
+                  target={<AddMessage chatId={chat.id} chatTitle={chat.title} />}
+                  icon={Icon.Plus}
+                  shortcut={{ modifiers: ["cmd"], key: "n" }}
                 />
-              </ActionPanel.Section>
-            </ActionPanel>
-          }
-        />
-      ))}
+                <Action.OpenInBrowser
+                  url={`https://v0.dev/chat/${chat.id}`}
+                  title="View in Browser"
+                  icon={Icon.Globe}
+                />
+                <Action.CopyToClipboard content={chat.id} title="Copy Chat ID" icon={Icon.CopyClipboard} />
+                <ActionPanel.Section>
+                  <Action
+                    title={chat.favorite ? "Unfavorite Chat" : "Favorite Chat"}
+                    icon={Icon.Star}
+                    onAction={() => favoriteChat(chat.id, !chat.favorite)}
+                    shortcut={{ modifiers: ["cmd", "shift"], key: "f" }}
+                  />
+                  <Action
+                    title="Delete Chat"
+                    icon={Icon.Trash}
+                    style={Action.Style.Destructive}
+                    onAction={() => deleteChat(chat.id, chat.title || "Untitled Chat")}
+                  />
+                </ActionPanel.Section>
+              </ActionPanel>
+            }
+          />
+        ))}
     </List>
   );
 }

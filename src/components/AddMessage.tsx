@@ -81,22 +81,15 @@ export default function AddMessage({ chatId, chatTitle }: AddMessageProps) {
         </ActionPanel>
       }
     >
-      {/* Add a disabled select dropdown with the chat title */}
-      <Form.Dropdown
-        id="chat"
-        value={displayTitle}
-        title="Add a new message to"
-        info="Your message will be sent to this chat."
-      >
-        <Form.Dropdown.Item value={displayTitle} title={displayTitle} />
-      </Form.Dropdown>
-
       <Form.TextArea
         {...itemProps.message}
         title="Message"
         placeholder="Describe what you want to build or ask a question..."
         info="Your message to v0. This will continue the conversation."
       />
+      <Form.Dropdown id="chat" value={displayTitle} title="Chat" info="Your message will be sent to this chat.">
+        <Form.Dropdown.Item value={displayTitle} title={displayTitle} />
+      </Form.Dropdown>
     </Form>
   );
 }
