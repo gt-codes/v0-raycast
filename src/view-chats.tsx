@@ -1,4 +1,4 @@
-import { ActionPanel, Detail, List, Action, Icon, Color, showToast, Toast } from "@raycast/api";
+import { ActionPanel, Detail, List, Action, Icon, Color, showToast, Toast, confirmAlert } from "@raycast/api";
 import { ensureApiKey } from "./lib/ensureApiKey";
 import { useFetch } from "@raycast/utils";
 import type { ChatSummary, FindChatsResponse } from "./types";
@@ -240,7 +240,18 @@ export default function Command() {
                     title="Delete Chat"
                     icon={Icon.Trash}
                     style={Action.Style.Destructive}
-                    onAction={() => deleteChat(chat.id, chat.title || "Untitled Chat")}
+                    onAction={async () => {
+                      if (
+                        await confirmAlert({
+                          title: `Delete "${chat.title || "Untitled Chat"}"?`,
+                          message:
+                            "The chat will be deleted and removed from your chat history. This action cannot be undone.",
+                        })
+                      ) {
+                        deleteChat(chat.id, chat.title || "Untitled Chat");
+                      }
+                    }}
+                    shortcut={{ modifiers: ["cmd", "shift"], key: "d" }}
                   />
                   <Action.Push
                     title="Assign Project"
