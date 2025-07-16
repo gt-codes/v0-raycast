@@ -63,6 +63,45 @@ export interface DeleteChatResponse {
   deleted: true;
 }
 
+export interface ForkChatResponse {
+  id: string;
+  object: "chat";
+  url: string;
+  demo?: string;
+  shareable: boolean;
+  privacy?: "public" | "private" | "team" | "team-edit" | "unlisted";
+  title?: string;
+  updatedAt?: string;
+  favorite: boolean;
+  authorId: string;
+  latestVersion?: {
+    id: string;
+    status: "pending" | "completed" | "failed";
+  };
+  messages: {
+    id: string;
+    object: "message";
+    content: string;
+    createdAt: string;
+    type:
+      | "message"
+      | "forked-block"
+      | "forked-chat"
+      | "open-in-v0"
+      | "refinement"
+      | "added-environment-variables"
+      | "added-integration"
+      | "deleted-file"
+      | "moved-file"
+      | "renamed-file"
+      | "edited-file"
+      | "replace-src"
+      | "reverted-block"
+      | "fix-with-v0"
+      | "sync-git";
+  }[];
+}
+
 export interface CreateChatRequest {
   message: string;
   attachments?: Array<{

@@ -4,9 +4,12 @@ import { useFetch } from "@raycast/utils";
 import type { ChatSummary, FindChatsResponse } from "./types";
 import ChatDetail from "./components/ChatDetail";
 import AddMessage from "./components/AddMessage";
+import { useNavigation } from "@raycast/api";
+import type { ForkChatResponse } from "./types";
 
 export default function Command() {
   const apiKey = ensureApiKey();
+  const { push } = useNavigation(); // Move useNavigation here
   const { isLoading, data, error, mutate } = useFetch<FindChatsResponse>("https://api.v0.dev/v1/chats", {
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -94,6 +97,47 @@ export default function Command() {
     }
   };
 
+  const forkChat = async (chat: ChatSummary) => {
+    const toast = await showToast({
+      style: Toast.Style.Animated,
+      title: "Forking chat...",
+    });
+
+    try {
+      const requestBody = chat.latestVersion?.id ? { versionId: chat.latestVersion.id } : {};
+      const response = await fetch(`https://api.v0.dev/v1/chats/${chat.id}/fork`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to fork chat: ${errorData.error?.message || response.statusText}`);
+      }
+
+      const newChatResponse: ForkChatResponse = await response.json();
+
+      // Navigate to the new chat detail
+      push(<ChatDetail chatId={newChatResponse.id} />);
+
+      toast.style = Toast.Style.Success;
+      toast.title = "Chat Forked";
+      toast.message = `"${chat.title}" has been forked successfully!`;
+
+      // Navigate to the new chat detail if useNavigation push is available
+      // For now, if 'push' is not defined (as per previous context), we won't navigate directly
+      // If you intend to navigate, please ensure 'push' from useNavigation() is imported and used correctly.
+    } catch (error) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Fork Failed";
+      toast.message = error instanceof Error ? error.message : "Failed to fork chat";
+    }
+  };
+
   if (error) {
     return <Detail markdown={`Error: ${error.message}`} />;
   }
@@ -174,6 +218,14 @@ export default function Command() {
                     onAction={() => favoriteChat(chat.id, !chat.favorite)}
                     shortcut={{ modifiers: ["cmd", "shift"], key: "f" }}
                   />
+                  {chat.latestVersion?.id && (
+                    <Action
+                      title="Fork Chat"
+                      icon={Icon.PlusCircle}
+                      onAction={() => forkChat(chat)}
+                      shortcut={{ modifiers: ["opt"], key: "f" }}
+                    />
+                  )}
                   <Action
                     title="Delete Chat"
                     icon={Icon.Trash}

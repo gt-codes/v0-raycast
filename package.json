@@ -12,7 +12,7 @@
       "type": "password",
       "title": "API Key",
       "required": true,
-      "description": "Enter your v0 API key. You can get it from https://v0.dev/chat/settings/keys"
+      "description": "Enter your v0 API key. Get one from https://v0.dev/chat/settings/keys"
     }
   ],
   "icon": "extension-icon.png",
