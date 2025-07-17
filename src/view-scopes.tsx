@@ -1,4 +1,4 @@
-import { List, Detail, Icon } from "@raycast/api";
+import { List, Detail, Icon, ActionPanel, Action } from "@raycast/api";
 import { useFetch } from "@raycast/utils";
 import { ensureApiKey } from "./lib/ensureApiKey";
 
@@ -44,6 +44,11 @@ export default function ViewScopesCommand() {
           icon={Icon.Tag}
           title={scope.name || "Untitled Scope"}
           accessories={[{ text: `ID: ${scope.id}` }]}
+          actions={
+            <ActionPanel>
+              <Action.CopyToClipboard title="Copy ID" content={scope.id} />
+            </ActionPanel>
+          }
         />
       ))}
     </List>

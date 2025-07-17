@@ -10,31 +10,58 @@ import AssignProjectForm from "./components/AssignProjectForm";
 import { useProjects } from "./lib/projects";
 import { useState, useMemo } from "react";
 import UpdateChatPrivacyForm from "./components/UpdateChatPrivacyForm";
+import { ensureDefaultScope } from "./lib/ensureDefaultScope";
+
+interface ScopeSummary {
+  id: string;
+  object: "scope";
+  name?: string;
+}
+
+interface FindScopesResponse {
+  object: "list";
+  data: ScopeSummary[];
+}
 
 export default function Command() {
   const apiKey = ensureApiKey();
   const { push } = useNavigation();
+  const defaultScope = ensureDefaultScope();
+
+  const [selectedScopeFilter, setSelectedScopeFilter] = useState<string | null>(defaultScope);
 
   const { isLoading, data, error, mutate } = useFetch<FindChatsResponse>("https://api.v0.dev/v1/chats", {
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      "x-scope": selectedScopeFilter || "",
     },
     parseResponse: (response) => response.json(),
     keepPreviousData: true, // Keep displaying previous data while new data is being fetched
     cache: "force-cache", // Use cache aggressively
   });
 
-  const { projects } = useProjects();
+  const {
+    isLoading: isLoadingScopes,
+    data: scopesData,
+    error: scopesError,
+  } = useFetch<FindScopesResponse>("https://api.v0.dev/v1/user/scopes", {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    parseResponse: (response) => response.json(),
+  });
 
-  const [selectedProjectIdFilter, setSelectedProjectIdFilter] = useState<string | null>(null); // State for the selected project filter
+  const { projects } = useProjects();
 
   // Filter chats based on the selectedProjectIdFilter
   const filteredChats = useMemo(() => {
     if (!data?.data) return [];
-    if (!selectedProjectIdFilter) return data.data; // Show all chats if no filter is selected
-    return data.data.filter((chat) => chat.projectId === selectedProjectIdFilter);
-  }, [data?.data, selectedProjectIdFilter]);
+    // if (!selectedProjectIdFilter) return data.data; // Show all chats if no filter is selected
+    // return data.data.filter((chat) => chat.projectId === selectedProjectIdFilter);
+    return data.data;
+  }, [data?.data]);
 
   const deleteChat = async (chatId: string, chatTitle: string) => {
     const toast = await showToast({
@@ -156,14 +183,14 @@ export default function Command() {
     }
   };
 
-  if (error) {
-    return <Detail markdown={`Error: ${error.message}`} />;
+  if (error || scopesError) {
+    return <Detail markdown={`Error: ${error?.message || scopesError?.message}`} />;
   }
 
-  if (isLoading) {
+  if (isLoading || isLoadingScopes) {
     return (
       <List navigationTitle="v0 Chats">
-        <List.EmptyView title="Fetching your chats..."></List.EmptyView>
+        <List.EmptyView title="Fetching your chats..." />
       </List>
     );
   }
@@ -203,15 +230,15 @@ export default function Command() {
       searchBarPlaceholder="Search your chats..."
       searchBarAccessory={
         <List.Dropdown
-          id="projectFilter"
-          tooltip="Filter Chats by Project"
-          value={selectedProjectIdFilter || "all"}
-          onChange={(newValue) => setSelectedProjectIdFilter(newValue === "all" ? null : newValue)}
+          id="scopeFilter"
+          tooltip="Filter Chats by Scope"
+          value={selectedScopeFilter || "all"}
+          onChange={(newValue) => setSelectedScopeFilter(newValue === "all" ? null : newValue)}
           storeValue
         >
-          <List.Dropdown.Item value="all" title="All Chats" icon={Icon.AppWindowList} />
-          {projects.map((project) => (
-            <List.Dropdown.Item key={project.id} value={project.id} title={project.name} icon={Icon.Tag} />
+          <List.Dropdown.Item value="all" title="All Scopes" icon={Icon.Globe} />
+          {scopesData?.data.map((scope: ScopeSummary) => (
+            <List.Dropdown.Item key={scope.id} value={scope.id} title={scope.name || "Untitled Scope"} />
           ))}
         </List.Dropdown>
       }
@@ -256,7 +283,7 @@ export default function Command() {
                 )}
                 <Action
                   title={chat.favorite ? "Unfavorite Chat" : "Favorite Chat"}
-                  icon={Icon.Star}
+                  icon={chat.favorite ? Icon.StarDisabled : Icon.Star}
                   onAction={() => favoriteChat(chat.id, !chat.favorite)}
                   shortcut={{ modifiers: ["cmd", "shift"], key: "f" }}
                 />

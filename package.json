@@ -12,7 +12,14 @@
       "type": "password",
       "title": "API Key",
       "required": true,
-      "description": "Enter your v0 API key. Get one from https://v0.dev/chat/settings/keys"
+      "description": "Generate an account token scoped to 'Full Account'. Get one from https://vercel.com/account/settings/tokens"
+    },
+    {
+      "name": "defaultScope",
+      "type": "textfield",
+      "title": "Default Scope ID",
+      "required": false,
+      "description": "Set a default scope ID for filtering chats."
     }
   ],
   "icon": "extension-icon.png",
