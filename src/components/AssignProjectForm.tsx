@@ -2,7 +2,7 @@ import { ActionPanel, Form, Action, showToast, Toast, Icon } from "@raycast/api"
 import { useNavigation } from "@raycast/api";
 import { ensureApiKey } from "../lib/ensureApiKey";
 import { useProjects } from "../lib/projects";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ChatSummary, Response as AssignProjectResponse } from "../types";
 import CreateProjectForm from "./CreateProjectForm";
 
@@ -15,9 +15,16 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
   const apiKey = ensureApiKey();
   const { pop } = useNavigation();
   const { projects, isLoadingProjects, projectError, revalidateProjects } = useProjects();
-  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(undefined);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(chat.projectId || "");
+
+  useEffect(() => {
+    setSelectedProjectId(chat.projectId || "");
+    console.log("Initial chat.projectId:", chat.projectId);
+    console.log("Initial selectedProjectId:", chat.projectId || "");
+  }, [chat.projectId]);
 
   const assignProject = async (projectIdToAssign: string) => {
+    console.log("Attempting to assign project with ID:", projectIdToAssign);
     const toast = await showToast({
       style: Toast.Style.Animated,
       title: "Assigning project...",
@@ -32,6 +39,8 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
         },
         body: JSON.stringify({ chatId: chat.id }),
       });
+
+      console.log("Assign Project API Response Status:", response.status);
 
       if (!response.ok) {
         const errorData = await response.json();

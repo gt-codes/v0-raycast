@@ -11,13 +11,15 @@ import { useProjects } from "./lib/projects";
 
 export default function Command() {
   const apiKey = ensureApiKey();
-  const { push } = useNavigation(); // Move useNavigation here
+  const { push } = useNavigation();
   const { isLoading, data, error, mutate } = useFetch<FindChatsResponse>("https://api.v0.dev/v1/chats", {
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     parseResponse: (response) => response.json(),
+    keepPreviousData: true, // Keep displaying previous data while new data is being fetched
+    cache: "force-cache", // Use cache aggressively
   });
 
   const { projects } = useProjects();
@@ -211,7 +213,7 @@ export default function Command() {
                 <Action.Push title="Show Details" target={<ChatDetail chatId={chat.id} />} icon={Icon.Eye} />
                 <Action.Push
                   title="Add Message"
-                  target={<AddMessage chatId={chat.id} chatTitle={chat.title} />}
+                  target={<AddMessage chatId={chat.id} chatTitle={chat.title} revalidateChats={mutate} />}
                   icon={Icon.Plus}
                   shortcut={{ modifiers: ["cmd"], key: "n" }}
                 />
@@ -219,6 +221,7 @@ export default function Command() {
                   url={`https://v0.dev/chat/${chat.id}`}
                   title="View in Browser"
                   icon={Icon.Globe}
+                  shortcut={{ modifiers: ["cmd"], key: "b" }}
                 />
                 <Action.CopyToClipboard content={chat.id} title="Copy Chat ID" icon={Icon.CopyClipboard} />
                 <ActionPanel.Section>

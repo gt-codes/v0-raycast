@@ -10,10 +10,11 @@ interface FormValues {
 
 interface AddMessageProps {
   chatId: string;
-  chatTitle?: string; // Added chatTitle prop
+  chatTitle?: string;
+  revalidateChats: () => void;
 }
 
-export default function AddMessage({ chatId, chatTitle }: AddMessageProps) {
+export default function AddMessage({ chatId, chatTitle, revalidateChats }: AddMessageProps) {
   const apiKey = ensureApiKey();
   const { push } = useNavigation();
 
@@ -50,6 +51,8 @@ export default function AddMessage({ chatId, chatTitle }: AddMessageProps) {
 
         // Push back to the chat detail to show the new message
         push(<ChatDetail chatId={chatId} />);
+
+        revalidateChats();
 
         return;
       } catch (error) {

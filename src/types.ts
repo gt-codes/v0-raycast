@@ -195,7 +195,7 @@ export interface FindProjectsResponse {
   data: ProjectDetail[];
 }
 
-export interface CreateProjectResponse {
+export interface Project {
   id: string;
   object: "project";
   name: string;

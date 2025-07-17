@@ -29,6 +29,12 @@
       "title": "New Chat",
       "description": "Create a new chat",
       "mode": "view"
+    },
+    {
+      "name": "create-project",
+      "title": "Create Project",
+      "description": "Create a new v0 project",
+      "mode": "view"
     }
   ],
   "dependencies": {
