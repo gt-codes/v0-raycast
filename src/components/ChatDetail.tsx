@@ -6,7 +6,7 @@ import AddMessage from "./AddMessage";
 
 export default function ChatDetail({ chatId }: { chatId: string }) {
   const apiKey = ensureApiKey();
-  const { isLoading, data, error } = useFetch<ChatDetailResponse>(`https://api.v0.dev/v1/chats/${chatId}`, {
+  const { isLoading, data, error, mutate } = useFetch<ChatDetailResponse>(`https://api.v0.dev/v1/chats/${chatId}`, {
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
@@ -62,7 +62,7 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
           <ActionPanel.Section>
             <Action.Push
               title="Add Message"
-              target={<AddMessage chatId={chatId} />}
+              target={<AddMessage chatId={chatId} revalidateChats={mutate} />}
               icon={Icon.Plus}
               shortcut={{ modifiers: ["cmd"], key: "n" }}
             />

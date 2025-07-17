@@ -1,0 +1,149 @@
+import { Detail, List, Icon, Color } from "@raycast/api";
+import { useFetch } from "@raycast/utils";
+import { ensureApiKey } from "./lib/ensureApiKey";
+
+interface TokenBillingData {
+  plan: string;
+  billingMode?: "test";
+  role: string;
+  billingCycle: {
+    start: number;
+    end: number;
+  };
+  balance: {
+    remaining: number;
+    total: number;
+  };
+  onDemand: {
+    balance: number;
+    blocks?: {
+      expirationDate?: number;
+      effectiveDate: number;
+      originalBalance: number;
+      currentBalance: number;
+    }[];
+  };
+}
+
+interface LegacyBillingData {
+  remaining?: number;
+  reset?: number;
+  limit: number;
+}
+
+interface BillingResponse {
+  billingType: "token" | "legacy";
+  data: TokenBillingData | LegacyBillingData;
+}
+
+export default function ViewBillingCommand() {
+  const apiKey = ensureApiKey();
+
+  const { isLoading, data, error } = useFetch<BillingResponse>("https://api.v0.dev/v1/user/billing", {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    parseResponse: (response) => response.json(),
+  });
+
+  if (error) {
+    return <Detail markdown={`Error: ${error.message}`} />;
+  }
+
+  if (isLoading) {
+    return (
+      <List navigationTitle="v0 Billing">
+        <List.EmptyView title="Loading..." description="Fetching your billing information..." />
+      </List>
+    );
+  }
+
+  if (!data) {
+    return <Detail markdown="No billing information available." />;
+  }
+
+  const billingItems: React.ReactElement[] = [];
+
+  if (data.billingType === "token") {
+    const billing = data.data as TokenBillingData;
+
+    billingItems.push(
+      <List.Section title="Token Billing Details" key="token-details">
+        <List.Item title="Plan" subtitle={billing.plan} icon={Icon.Stars} />
+        {billing.billingMode && <List.Item title="Billing Mode" subtitle={billing.billingMode} icon={Icon.Cog} />}
+        <List.Item title="Role" subtitle={billing.role} icon={Icon.Person} />
+        <List.Item
+          title="Billing Cycle Start"
+          subtitle={new Date(billing.billingCycle.start * 1000).toLocaleDateString()}
+          icon={Icon.Calendar}
+        />
+        <List.Item
+          title="Billing Cycle End"
+          subtitle={new Date(billing.billingCycle.end * 1000).toLocaleDateString()}
+          icon={Icon.Calendar}
+        />
+        <List.Item
+          title="Balance Remaining"
+          subtitle={billing.balance.remaining.toString()}
+          icon={{ source: Icon.Wallet, tintColor: billing.balance.remaining > 0 ? Color.Green : Color.Red }}
+        />
+        <List.Item title="Total Balance" subtitle={billing.balance.total.toString()} icon={Icon.Wallet} />
+        <List.Item title="On-Demand Balance" subtitle={billing.onDemand.balance.toString()} icon={Icon.Bolt} />
+      </List.Section>,
+    );
+
+    if (billing.onDemand.blocks && billing.onDemand.blocks.length > 0) {
+      billingItems.push(
+        <List.Section title="On-Demand Blocks" key="on-demand-blocks">
+          {billing.onDemand.blocks.map((block, index) => (
+            <List.Item
+              key={`block-${block.effectiveDate}-${block.originalBalance}`}
+              title={`Block ${index + 1}`}
+              subtitle={`Current: ${block.currentBalance} / Original: ${block.originalBalance}`}
+              icon={Icon.Box}
+              accessories={
+                [
+                  {
+                    text: `Effective: ${new Date(block.effectiveDate * 1000).toLocaleDateString()}`,
+                    icon: Icon.ArrowRight,
+                  },
+                  block.expirationDate
+                    ? {
+                        text: `Expires: ${new Date(block.expirationDate * 1000).toLocaleDateString()}`,
+                        icon: Icon.Calendar,
+                      }
+                    : undefined,
+                ].filter(Boolean) as List.Item.Accessory[]
+              }
+            />
+          ))}
+        </List.Section>,
+      );
+    }
+  } else if (data.billingType === "legacy") {
+    const billing = data.data as LegacyBillingData;
+
+    billingItems.push(
+      <List.Section title="Legacy Billing Details" key="legacy-details">
+        {billing.remaining !== undefined && (
+          <List.Item
+            title="Remaining"
+            subtitle={billing.remaining.toString()}
+            icon={{ source: Icon.Wallet, tintColor: billing.remaining > 0 ? Color.Green : Color.Red }}
+          />
+        )}
+        {billing.reset && (
+          <List.Item
+            title="Reset Date"
+            subtitle={new Date(billing.reset * 1000).toLocaleDateString()}
+            icon={Icon.Calendar}
+          />
+        )}
+        <List.Item title="Limit" subtitle={billing.limit.toString()} icon={Icon.HardDrive} />
+      </List.Section>,
+    );
+  }
+
+  return <List navigationTitle="v0 Billing">{billingItems}</List>;
+}

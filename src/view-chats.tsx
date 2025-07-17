@@ -9,10 +9,12 @@ import type { ForkChatResponse } from "./types";
 import AssignProjectForm from "./components/AssignProjectForm";
 import { useProjects } from "./lib/projects";
 import { useState, useMemo } from "react";
+import UpdateChatPrivacyForm from "./components/UpdateChatPrivacyForm";
 
 export default function Command() {
   const apiKey = ensureApiKey();
   const { push } = useNavigation();
+
   const { isLoading, data, error, mutate } = useFetch<FindChatsResponse>("https://api.v0.dev/v1/chats", {
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -244,28 +246,51 @@ export default function Command() {
                   icon={Icon.Plus}
                   shortcut={{ modifiers: ["cmd"], key: "n" }}
                 />
-                <Action.OpenInBrowser
-                  url={`https://v0.dev/chat/${chat.id}`}
-                  title="View in Browser"
-                  icon={Icon.Globe}
-                  shortcut={{ modifiers: ["cmd"], key: "b" }}
-                />
-                <Action.CopyToClipboard content={chat.id} title="Copy Chat ID" icon={Icon.CopyClipboard} />
-                <ActionPanel.Section>
+                {chat.latestVersion?.id && (
                   <Action
-                    title={chat.favorite ? "Unfavorite Chat" : "Favorite Chat"}
-                    icon={Icon.Star}
-                    onAction={() => favoriteChat(chat.id, !chat.favorite)}
-                    shortcut={{ modifiers: ["cmd", "shift"], key: "f" }}
+                    title="Fork Chat"
+                    icon={Icon.Duplicate}
+                    onAction={() => forkChat(chat)}
+                    shortcut={{ modifiers: ["opt"], key: "f" }}
                   />
-                  {chat.latestVersion?.id && (
-                    <Action
-                      title="Fork Chat"
-                      icon={Icon.PlusCircle}
-                      onAction={() => forkChat(chat)}
-                      shortcut={{ modifiers: ["opt"], key: "f" }}
+                )}
+                <Action
+                  title={chat.favorite ? "Unfavorite Chat" : "Favorite Chat"}
+                  icon={Icon.Star}
+                  onAction={() => favoriteChat(chat.id, !chat.favorite)}
+                  shortcut={{ modifiers: ["cmd", "shift"], key: "f" }}
+                />
+                <Action.Push
+                  title="Assign Project"
+                  icon={Icon.Tag}
+                  target={<AssignProjectForm chat={chat} revalidateChats={mutate} />}
+                  shortcut={{ modifiers: ["cmd", "shift"], key: "a" }}
+                />
+                <Action.Push
+                  title="Update Chat Privacy"
+                  icon={Icon.Lock}
+                  target={
+                    <UpdateChatPrivacyForm
+                      chatId={chat.id}
+                      currentPrivacy={chat.privacy as "public" | "private" | "team" | "team-edit" | "unlisted"}
+                      revalidateChats={mutate}
                     />
-                  )}
+                  }
+                  shortcut={{ modifiers: ["cmd", "shift"], key: "p" }}
+                />
+                <ActionPanel.Section>
+                  <Action.OpenInBrowser
+                    url={`https://v0.dev/chat/${chat.id}`}
+                    title="View in Browser"
+                    icon={Icon.Globe}
+                    shortcut={{ modifiers: ["cmd"], key: "b" }}
+                  />
+                  <Action.CopyToClipboard
+                    content={chat.id}
+                    title="Copy Chat ID"
+                    icon={Icon.CopyClipboard}
+                    shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+                  />
                   <Action
                     title="Delete Chat"
                     icon={Icon.Trash}
@@ -282,12 +307,6 @@ export default function Command() {
                       }
                     }}
                     shortcut={{ modifiers: ["cmd", "shift"], key: "d" }}
-                  />
-                  <Action.Push
-                    title="Assign Project"
-                    icon={Icon.Tag}
-                    target={<AssignProjectForm chat={chat} revalidateChats={mutate} />}
-                    shortcut={{ modifiers: ["cmd", "shift"], key: "a" }}
                   />
                 </ActionPanel.Section>
               </ActionPanel>

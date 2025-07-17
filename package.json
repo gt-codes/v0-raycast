@@ -41,6 +41,18 @@
       "title": "View Scopes",
       "description": "View your v0 API scopes",
       "mode": "view"
+    },
+    {
+      "name": "view-projects",
+      "title": "View Projects",
+      "description": "View all your v0 projects",
+      "mode": "view"
+    },
+    {
+      "name": "view-billing",
+      "title": "View Billing",
+      "description": "View your v0 API billing information",
+      "mode": "view"
     }
   ],
   "dependencies": {

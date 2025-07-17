@@ -6,6 +6,9 @@ import ChatDetail from "./ChatDetail";
 
 interface FormValues {
   message: string;
+  modelId?: "v0-1.5-sm" | "v0-1.5-md" | "v0-1.5-lg";
+  imageGenerations?: boolean;
+  thinking?: boolean;
 }
 
 interface AddMessageProps {
@@ -28,7 +31,17 @@ export default function AddMessage({ chatId, chatTitle, revalidateChats }: AddMe
       try {
         const requestBody: CreateMessageRequest = {
           message: values.message,
+          modelConfiguration: {
+            ...(values.modelId && { modelId: values.modelId }),
+            ...(typeof values.imageGenerations === "boolean" && { imageGenerations: values.imageGenerations }),
+            ...(typeof values.thinking === "boolean" && { thinking: values.thinking }),
+          },
         };
+
+        // Remove modelConfiguration if it's empty
+        if (requestBody.modelConfiguration && Object.keys(requestBody.modelConfiguration).length === 0) {
+          delete requestBody.modelConfiguration;
+        }
 
         const response = await fetch(`https://api.v0.dev/v1/chats/${chatId}/messages`, {
           method: "POST",
@@ -90,9 +103,23 @@ export default function AddMessage({ chatId, chatTitle, revalidateChats }: AddMe
         placeholder="Describe what you want to build or ask a question..."
         info="Your message to v0. This will continue the conversation."
       />
-      <Form.Dropdown id="chat" value={displayTitle} title="Chat" info="Your message will be sent to this chat.">
+      <Form.Dropdown
+        id="modelId"
+        title="Model"
+        value={itemProps.modelId.value || ""}
+        onChange={(newValue) =>
+          itemProps.modelId.onChange?.(newValue as "v0-1.5-sm" | "v0-1.5-md" | "v0-1.5-lg" | undefined)
+        }
+      >
+        <Form.Dropdown.Item value="v0-1.5-sm" title="v0-1.5-sm" />
+        <Form.Dropdown.Item value="v0-1.5-md" title="v0-1.5-md" />
+        <Form.Dropdown.Item value="v0-1.5-lg" title="v0-1.5-lg" />
+      </Form.Dropdown>
+      <Form.Dropdown id="chat" defaultValue={displayTitle} title="Chat" info="Your message will be sent to this chat.">
         <Form.Dropdown.Item value={displayTitle} title={displayTitle} />
       </Form.Dropdown>
+      {/* <Form.Checkbox label="Image Generations" {...itemProps.imageGenerations} />
+      <Form.Checkbox label="Thinking" {...itemProps.thinking} /> */}
     </Form>
   );
 }
