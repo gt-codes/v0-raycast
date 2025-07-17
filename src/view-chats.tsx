@@ -8,6 +8,7 @@ import { useNavigation } from "@raycast/api";
 import type { ForkChatResponse } from "./types";
 import AssignProjectForm from "./components/AssignProjectForm";
 import { useProjects } from "./lib/projects";
+import { useState, useMemo } from "react";
 
 export default function Command() {
   const apiKey = ensureApiKey();
@@ -23,6 +24,15 @@ export default function Command() {
   });
 
   const { projects } = useProjects();
+
+  const [selectedProjectIdFilter, setSelectedProjectIdFilter] = useState<string | null>(null); // State for the selected project filter
+
+  // Filter chats based on the selectedProjectIdFilter
+  const filteredChats = useMemo(() => {
+    if (!data?.data) return [];
+    if (!selectedProjectIdFilter) return data.data; // Show all chats if no filter is selected
+    return data.data.filter((chat) => chat.projectId === selectedProjectIdFilter);
+  }, [data?.data, selectedProjectIdFilter]);
 
   const deleteChat = async (chatId: string, chatTitle: string) => {
     const toast = await showToast({
@@ -151,7 +161,7 @@ export default function Command() {
   if (isLoading) {
     return (
       <List navigationTitle="v0 Chats">
-        <List.EmptyView title="Loading..." description="Fetching your chats..." />
+        <List.EmptyView title="Fetching your chats..."></List.EmptyView>
       </List>
     );
   }
@@ -186,8 +196,25 @@ export default function Command() {
   };
 
   return (
-    <List navigationTitle="v0 Chats" searchBarPlaceholder="Search your chats...">
-      {data?.data
+    <List
+      navigationTitle="v0 Chats"
+      searchBarPlaceholder="Search your chats..."
+      searchBarAccessory={
+        <List.Dropdown
+          id="projectFilter"
+          tooltip="Filter Chats by Project"
+          value={selectedProjectIdFilter || "all"}
+          onChange={(newValue) => setSelectedProjectIdFilter(newValue === "all" ? null : newValue)}
+          storeValue
+        >
+          <List.Dropdown.Item value="all" title="All Chats" icon={Icon.AppWindowList} />
+          {projects.map((project) => (
+            <List.Dropdown.Item key={project.id} value={project.id} title={project.name} icon={Icon.Tag} />
+          ))}
+        </List.Dropdown>
+      }
+    >
+      {filteredChats
         .sort((a, b) => {
           // Sort favorited chats to the top
           if (a.favorite && !b.favorite) return -1;

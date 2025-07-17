@@ -3,16 +3,22 @@ import { useForm } from "@raycast/utils";
 import { ensureApiKey } from "./lib/ensureApiKey";
 import type { CreateChatRequest } from "./types";
 import ViewChats from "./view-chats";
+import { useProjects } from "./lib/projects";
 
 interface FormValues {
   message: string;
   system?: string;
   chatPrivacy: string;
+  projectId?: string;
+  modelId?: "v0-1.5-sm" | "v0-1.5-md" | "v0-1.5-lg";
+  imageGenerations?: boolean;
+  thinking?: boolean;
 }
 
 export default function Command() {
   const apiKey = ensureApiKey();
   const { push } = useNavigation();
+  const { projects, isLoadingProjects } = useProjects();
 
   const { handleSubmit, itemProps } = useForm<FormValues>({
     onSubmit: async (values) => {
@@ -26,7 +32,18 @@ export default function Command() {
           message: values.message,
           chatPrivacy: values.chatPrivacy as "public" | "private" | "team-edit" | "team" | "unlisted",
           ...(values.system && { system: values.system }),
+          ...(values.projectId && { projectId: values.projectId }),
+          modelConfiguration: {
+            ...(values.modelId && { modelId: values.modelId }),
+            ...(typeof values.imageGenerations === "boolean" && { imageGenerations: values.imageGenerations }),
+            ...(typeof values.thinking === "boolean" && { thinking: values.thinking }),
+          },
         };
+
+        // Remove modelConfiguration if it's empty
+        if (requestBody.modelConfiguration && Object.keys(requestBody.modelConfiguration).length === 0) {
+          delete requestBody.modelConfiguration;
+        }
 
         const response = await fetch("https://api.v0.dev/v1/chats", {
           method: "POST",
@@ -86,10 +103,37 @@ export default function Command() {
         placeholder="Describe what you want to build or ask a question..."
         info="Your initial message to v0. This will start the conversation."
       />
+      <Form.Dropdown
+        id="modelId"
+        title="Model"
+        value={itemProps.modelId.value || ""}
+        onChange={(newValue) =>
+          itemProps.modelId.onChange?.(newValue as "v0-1.5-sm" | "v0-1.5-md" | "v0-1.5-lg" | undefined)
+        }
+      >
+        <Form.Dropdown.Item value="v0-1.5-sm" title="v0-1.5-sm" />
+        <Form.Dropdown.Item value="v0-1.5-md" title="v0-1.5-md" />
+        <Form.Dropdown.Item value="v0-1.5-lg" title="v0-1.5-lg" />
+      </Form.Dropdown>
+
+      <Form.Separator />
+
+      <Form.Dropdown
+        id="projectId"
+        title="Assign to Project (Optional)"
+        value={itemProps.projectId.value || ""}
+        onChange={itemProps.projectId.onChange}
+        isLoading={isLoadingProjects}
+      >
+        <Form.Dropdown.Item value="" title="None" />
+        {projects.map((project) => (
+          <Form.Dropdown.Item key={project.id} value={project.id} title={project.name} />
+        ))}
+      </Form.Dropdown>
 
       <Form.TextArea
         {...itemProps.system}
-        title="System Message (Optional)"
+        title="System Instructions (Optional)"
         placeholder="Optional system instructions for v0..."
         info="Additional context or instructions for how v0 should respond."
       />
@@ -101,6 +145,9 @@ export default function Command() {
         <Form.Dropdown.Item value="team-edit" title="Team (Editable)" />
         <Form.Dropdown.Item value="unlisted" title="Unlisted" />
       </Form.Dropdown>
+
+      {/* <Form.Checkbox label="Image Generations" {...itemProps.imageGenerations} />
+      <Form.Checkbox label="Thinking" {...itemProps.thinking} /> */}
     </Form>
   );
 }

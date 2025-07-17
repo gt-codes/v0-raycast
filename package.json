@@ -35,6 +35,12 @@
       "title": "Create Project",
       "description": "Create a new v0 project",
       "mode": "view"
+    },
+    {
+      "name": "view-scopes",
+      "title": "View Scopes",
+      "description": "View your v0 API scopes",
+      "mode": "view"
     }
   ],
   "dependencies": {
