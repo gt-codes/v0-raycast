@@ -1,9 +1,9 @@
-import { getPreferenceValues, LocalStorage } from "@raycast/api";
+import { getPreferenceValues } from "@raycast/api";
 import type { Profile } from "../types";
 
 interface Preferences {
   apiKey?: string;
-  defaultScope?: string; // Add defaultScope to Preferences interface
+  defaultScope?: string;
 }
 
 interface ActiveProfileDetails {
@@ -11,19 +11,11 @@ interface ActiveProfileDetails {
   defaultScope: string | null;
 }
 
-export async function getActiveProfileDetails(): Promise<ActiveProfileDetails> {
+export async function getActiveProfileDetails(
+  profiles: Profile[],
+  activeProfileId: string | undefined,
+): Promise<ActiveProfileDetails> {
   const preferences = getPreferenceValues<Preferences>();
-  const activeProfileId = await LocalStorage.getItem<string>("v0-active-profile-id");
-  const profilesString = await LocalStorage.getItem<string>("v0-profiles");
-
-  let profiles: Profile[] = [];
-  if (profilesString) {
-    try {
-      profiles = JSON.parse(profilesString);
-    } catch (e) {
-      console.error("Failed to parse profiles from LocalStorage", e);
-    }
-  }
 
   let apiKey: string | undefined = undefined;
   let defaultScope: string | null = null;

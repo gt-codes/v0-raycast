@@ -20,8 +20,6 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
 
   useEffect(() => {
     setSelectedProjectId(chat.projectId || "");
-    console.log("Initial chat.projectId:", chat.projectId);
-    console.log("Initial selectedProjectId:", chat.projectId || "");
   }, [chat.projectId]);
 
   const assignProject = async (projectIdToAssign: string) => {
@@ -29,7 +27,6 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
       showToast(Toast.Style.Failure, "API Key not available. Please set it in Preferences or manage profiles.");
       return;
     }
-    console.log("Attempting to assign project with ID:", projectIdToAssign);
     const toast = await showToast({
       style: Toast.Style.Animated,
       title: "Assigning project...",
@@ -44,8 +41,6 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
         },
         body: JSON.stringify({ chatId: chat.id }),
       });
-
-      console.log("Assign Project API Response Status:", response.status);
 
       if (!response.ok) {
         const errorData = await response.json();

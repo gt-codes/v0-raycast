@@ -3,7 +3,7 @@ import { useProjects } from "./hooks/useProjects";
 import { useState, useEffect } from "react";
 import { ScopeDropdown } from "./components/ScopeDropdown";
 import { useActiveProfile } from "./hooks/useActiveProfile";
-import { useScopes } from "./hooks/useScopes"; // Import useScopes
+import { useScopes } from "./hooks/useScopes";
 
 export default function ViewProjectsCommand() {
   const { activeProfileApiKey, activeProfileDefaultScope, isLoadingProfileDetails } = useActiveProfile();

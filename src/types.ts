@@ -215,6 +215,7 @@ export interface Profile {
   name: string;
   apiKey: string;
   defaultScope?: string;
+  defaultScopeName?: string;
 }
 
 export interface ActiveProfileId {

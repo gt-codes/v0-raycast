@@ -1,17 +1,15 @@
 import { ActionPanel, List, Action, useNavigation, Form, showToast, Toast, getPreferenceValues } from "@raycast/api";
 import { useEffect, useState } from "react";
 import { useCachedState } from "@raycast/utils";
-import type { Profile, ScopeSummary } from "./types"; // Import ScopeSummary
+import type { Profile, ScopeSummary } from "./types";
 import { v4 as uuidv4 } from "uuid";
 import { Icon } from "@raycast/api";
 import { getActiveProfileDetails } from "./lib/profile-utils";
-import { useScopes } from "./hooks/useScopes"; // Import the new hook
+import { useScopes } from "./hooks/useScopes";
 
 interface Preferences {
   apiKey: string;
 }
-
-// Removed ScopeSummary and FindScopesResponse interfaces from here
 
 function AddProfileForm(props: { onAdd: (profile: Profile) => void }) {
   const { pop } = useNavigation();
@@ -48,16 +46,18 @@ function SetDefaultScopeForm(props: { profile: Profile; onUpdate: (profile: Prof
   const { pop } = useNavigation();
   const [selectedScopeId, setSelectedScopeId] = useState<string>(props.profile.defaultScope || "");
 
-  const { scopes, isLoadingScopes } = useScopes(props.profile.apiKey); // Use the new useScopes hook
+  const { scopes, isLoadingScopes } = useScopes(props.profile.apiKey);
 
   async function handleSubmit(values: { scopeId: string }) {
+    const selectedScope = scopes.find((s) => s.id === values.scopeId);
     props.onUpdate({
       ...props.profile,
       defaultScope: values.scopeId || undefined,
+      defaultScopeName: selectedScope?.name || undefined, // Store the scope name
     });
     showToast(
       Toast.Style.Success,
-      `Default scope ${values.scopeId ? `set to ${values.scopeId}` : "removed"} for ${props.profile.name}`,
+      `Default scope ${selectedScope?.name ? `set to ${selectedScope.name}` : "removed"} for ${props.profile.name}`,
     );
     pop();
   }
@@ -92,31 +92,48 @@ export default function ManageProfiles() {
   const [profiles, setProfiles] = useCachedState<Profile[]>("v0-profiles", []);
   const [activeProfileId, setActiveProfileId] = useCachedState<string | undefined>("v0-active-profile-id", undefined);
   const preferences = getPreferenceValues<Preferences>();
-  const [isLoading, setIsLoading] = useState(true);
+
+  const { scopes: initialScopes, isLoadingScopes: isLoadingInitialScopes } = useScopes(
+    preferences.apiKey,
+    !profiles || profiles.length === 0,
+  );
 
   useEffect(() => {
     async function initializeProfiles() {
-      if (profiles === undefined || profiles.length === 0) {
-        // If no profiles exist, create one from the preference API key
+      // Only run this effect if profiles are not yet loaded and initial scopes are not loading
+      if (!isLoadingInitialScopes && (profiles === undefined || profiles.length === 0)) {
         if (preferences.apiKey) {
-          const { defaultScope } = await getActiveProfileDetails();
+          const { defaultScope } = await getActiveProfileDetails(profiles, activeProfileId);
+          const defaultScopeName = initialScopes?.find((s) => s.id === defaultScope)?.name;
+
           const defaultProfile: Profile = {
             id: "default",
             name: "Default Profile",
             apiKey: preferences.apiKey,
             ...(defaultScope && { defaultScope }),
+            ...(defaultScopeName && { defaultScopeName }),
           };
           setProfiles([defaultProfile]);
-          setActiveProfileId(defaultProfile.id);
+          // Set active profile only if it's currently undefined
+          setActiveProfileId((prevActiveProfileId) =>
+            prevActiveProfileId === undefined ? defaultProfile.id : prevActiveProfileId,
+          );
         }
       } else if (activeProfileId === undefined && profiles.length > 0) {
         // If profiles exist but no active one, set the first as active
         setActiveProfileId(profiles[0].id);
       }
-      setIsLoading(false);
     }
     initializeProfiles();
-  }, [profiles, activeProfileId, preferences.apiKey]);
+  }, [
+    profiles,
+    activeProfileId,
+    preferences.apiKey,
+    initialScopes,
+    isLoadingInitialScopes,
+    setProfiles,
+    setActiveProfileId,
+  ]);
 
   const handleAddProfile = (newProfile: Profile) => {
     setProfiles((prev) => [...(prev || []), newProfile]);
@@ -135,17 +152,14 @@ export default function ManageProfiles() {
   };
 
   return (
-    <List isLoading={isLoading}>
+    <List isLoading={isLoadingInitialScopes}>
       <List.Section title="Profiles">
         {profiles?.map((profile) => (
           <List.Item
             key={profile.id}
             title={profile.name}
-            subtitle={profile.id === "default" ? "⚙︎ Preferences" : "Custom"}
-            accessories={[
-              { text: profile.id === activeProfileId ? "Active" : "" },
-              ...(profile.defaultScope ? [{ text: `Scope: ${profile.defaultScope}` }] : []),
-            ]}
+            subtitle={profile.defaultScopeName ? profile.defaultScopeName : undefined}
+            accessories={[{ text: profile.id === activeProfileId ? "Active" : "" }]}
             actions={
               <ActionPanel>
                 <Action

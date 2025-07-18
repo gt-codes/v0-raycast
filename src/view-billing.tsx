@@ -78,7 +78,6 @@ export default function ViewBillingCommand() {
     execute: !!activeProfileApiKey && !isLoadingProfileDetails,
   });
 
-  console.log("Plan Data:", planData);
 
   if (error || planError) {
     return <Detail markdown={`Error: ${error?.message || planError?.message}`} />;
