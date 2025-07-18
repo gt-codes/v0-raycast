@@ -1,10 +1,10 @@
 import { ActionPanel, Form, Action, showToast, Toast, Icon } from "@raycast/api";
 import { useNavigation } from "@raycast/api";
-import { ensureApiKey } from "../lib/ensureApiKey";
-import { useProjects } from "../lib/projects";
+import { useProjects } from "../hooks/useProjects";
 import { useState, useEffect } from "react";
 import type { ChatSummary, Response as AssignProjectResponse } from "../types";
 import CreateProjectForm from "./CreateProjectForm";
+import { useActiveProfile } from "../hooks/useActiveProfile";
 
 interface AssignProjectFormProps {
   chat: ChatSummary;
@@ -12,10 +12,11 @@ interface AssignProjectFormProps {
 }
 
 export default function AssignProjectForm({ chat, revalidateChats }: AssignProjectFormProps) {
-  const apiKey = ensureApiKey();
   const { pop } = useNavigation();
   const { projects, isLoadingProjects, projectError, revalidateProjects } = useProjects();
   const [selectedProjectId, setSelectedProjectId] = useState<string>(chat.projectId || "");
+
+  const { activeProfileApiKey, isLoadingProfileDetails } = useActiveProfile();
 
   useEffect(() => {
     setSelectedProjectId(chat.projectId || "");
@@ -24,6 +25,10 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
   }, [chat.projectId]);
 
   const assignProject = async (projectIdToAssign: string) => {
+    if (!activeProfileApiKey) {
+      showToast(Toast.Style.Failure, "API Key not available. Please set it in Preferences or manage profiles.");
+      return;
+    }
     console.log("Attempting to assign project with ID:", projectIdToAssign);
     const toast = await showToast({
       style: Toast.Style.Animated,
@@ -34,7 +39,7 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
       const response = await fetch(`https://api.v0.dev/v1/projects/${projectIdToAssign}/assign`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${activeProfileApiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ chatId: chat.id }),
@@ -88,7 +93,7 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
 
   return (
     <Form
-      isLoading={isLoadingProjects}
+      isLoading={isLoadingProjects || isLoadingProfileDetails}
       actions={
         <ActionPanel>
           <Action.SubmitForm title="Assign Selected Project" onSubmit={handleSubmit} icon={Icon.Tag} />

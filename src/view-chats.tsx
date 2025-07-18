@@ -1,37 +1,56 @@
 import { ActionPanel, Detail, List, Action, Icon, Color, showToast, Toast, confirmAlert } from "@raycast/api";
-import { ensureApiKey } from "./lib/ensureApiKey";
 import { useFetch } from "@raycast/utils";
-import type { ChatSummary, FindChatsResponse } from "./types";
+import type { ChatSummary, FindChatsResponse, ForkChatResponse, ScopeSummary, FindScopesResponse } from "./types";
 import ChatDetail from "./components/ChatDetail";
 import AddMessage from "./components/AddMessage";
 import { useNavigation } from "@raycast/api";
-import type { ForkChatResponse } from "./types";
 import AssignProjectForm from "./components/AssignProjectForm";
-import { useProjects } from "./lib/projects";
-import { useState, useMemo } from "react";
+import { useProjects } from "./hooks/useProjects";
+import { useState, useMemo, useEffect } from "react";
 import UpdateChatPrivacyForm from "./components/UpdateChatPrivacyForm";
-import { ensureDefaultScope } from "./lib/ensureDefaultScope";
+import { useActiveProfile } from "./hooks/useActiveProfile";
 import { ScopeDropdown } from "./components/ScopeDropdown";
 
 export default function Command(props: { scopeId?: string }) {
-  const apiKey = ensureApiKey();
   const { push } = useNavigation();
-  const defaultScope = ensureDefaultScope();
-
-  const [selectedScopeFilter, setSelectedScopeFilter] = useState<string | null>(props.scopeId || defaultScope);
-
-  const { isLoading, data, error, mutate } = useFetch<FindChatsResponse>("https://api.v0.dev/v1/chats", {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "x-scope": selectedScopeFilter || "",
-    },
-    parseResponse: (response) => response.json(),
-    keepPreviousData: true, // Keep displaying previous data while new data is being fetched
-    cache: "force-cache", // Use cache aggressively
-  });
-
   const { projects } = useProjects();
+  const { activeProfileApiKey, activeProfileDefaultScope, isLoadingProfileDetails } = useActiveProfile();
+
+  const [selectedScopeFilter, setSelectedScopeFilter] = useState<string | null>(props.scopeId || null);
+
+  useEffect(() => {
+    // Update selectedScopeFilter when defaultScope becomes available or props.scopeId changes
+    if (activeProfileDefaultScope !== null && !isLoadingProfileDetails && !props.scopeId) {
+      setSelectedScopeFilter(activeProfileDefaultScope);
+    }
+  }, [activeProfileDefaultScope, isLoadingProfileDetails, props.scopeId]);
+
+  const { isLoading, data, error, mutate } = useFetch<FindChatsResponse>(
+    activeProfileApiKey && !isLoadingProfileDetails ? "https://api.v0.dev/v1/chats" : "",
+    {
+      headers: {
+        Authorization: `Bearer ${activeProfileApiKey}`,
+        "Content-Type": "application/json",
+        "x-scope": selectedScopeFilter || "",
+      },
+      parseResponse: (response) => response.json(),
+      keepPreviousData: true,
+      cache: "force-cache",
+      execute: !!activeProfileApiKey && !isLoadingProfileDetails,
+    },
+  );
+
+  const { isLoading: isLoadingScopes, data: scopesData } = useFetch<FindScopesResponse>(
+    activeProfileApiKey ? "https://api.v0.dev/v1/user/scopes" : "",
+    {
+      headers: {
+        Authorization: `Bearer ${activeProfileApiKey}`,
+        "Content-Type": "application/json",
+      },
+      parseResponse: (response) => response.json(),
+      execute: !!activeProfileApiKey, // Only execute if apiKey is available
+    },
+  );
 
   // Filter chats based on the selectedProjectIdFilter
   const filteredChats = useMemo(() => {
@@ -40,6 +59,10 @@ export default function Command(props: { scopeId?: string }) {
   }, [data?.data]);
 
   const deleteChat = async (chatId: string, chatTitle: string) => {
+    if (!activeProfileApiKey) {
+      showToast(Toast.Style.Failure, "API Key not available.");
+      return;
+    }
     const toast = await showToast({
       style: Toast.Style.Animated,
       title: "Deleting chat...",
@@ -47,16 +70,14 @@ export default function Command(props: { scopeId?: string }) {
 
     try {
       await mutate(
-        // API call to delete the chat
         fetch(`https://api.v0.dev/v1/chats/${chatId}`, {
           method: "DELETE",
           headers: {
-            Authorization: `Bearer ${apiKey}`,
+            Authorization: `Bearer ${activeProfileApiKey}`,
             "Content-Type": "application/json",
           },
         }),
         {
-          // Optimistically remove the chat from the list immediately
           optimisticUpdate(data) {
             if (!data) return data;
             return {
@@ -64,17 +85,14 @@ export default function Command(props: { scopeId?: string }) {
               data: data.data.filter((chat) => chat.id !== chatId),
             };
           },
-          // If the API call fails, the data will be automatically rolled back
           rollbackOnError: true,
         },
       );
 
-      // Success - the chat has been deleted
       toast.style = Toast.Style.Success;
       toast.title = "Chat Deleted";
-      toast.message = `"${chatTitle}" has been deleted successfully.`;
+      toast.message = `\"${chatTitle}\" has been deleted successfully.`;
     } catch (error) {
-      // Failure - the data will be automatically rolled back
       toast.style = Toast.Style.Failure;
       toast.title = "Delete Failed";
       toast.message = error instanceof Error ? error.message : "Failed to delete chat";
@@ -82,6 +100,10 @@ export default function Command(props: { scopeId?: string }) {
   };
 
   const favoriteChat = async (chatId: string, isFavorite: boolean) => {
+    if (!activeProfileApiKey) {
+      showToast(Toast.Style.Failure, "API Key not available.");
+      return;
+    }
     const toast = await showToast({
       style: Toast.Style.Animated,
       title: isFavorite ? "Favoriting chat..." : "Unfavoriting chat...",
@@ -92,7 +114,7 @@ export default function Command(props: { scopeId?: string }) {
         fetch(`https://api.v0.dev/v1/chats/${chatId}/favorite`, {
           method: "PUT",
           headers: {
-            Authorization: `Bearer ${apiKey}`,
+            Authorization: `Bearer ${activeProfileApiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ isFavorite }),
@@ -119,6 +141,10 @@ export default function Command(props: { scopeId?: string }) {
   };
 
   const forkChat = async (chat: ChatSummary) => {
+    if (!activeProfileApiKey) {
+      showToast(Toast.Style.Failure, "API Key not available.");
+      return;
+    }
     const toast = await showToast({
       style: Toast.Style.Animated,
       title: "Forking chat...",
@@ -129,7 +155,7 @@ export default function Command(props: { scopeId?: string }) {
       const response = await fetch(`https://api.v0.dev/v1/chats/${chat.id}/fork`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${activeProfileApiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
@@ -147,11 +173,7 @@ export default function Command(props: { scopeId?: string }) {
 
       toast.style = Toast.Style.Success;
       toast.title = "Chat Forked";
-      toast.message = `"${chat.title}" has been forked successfully!`;
-
-      // Navigate to the new chat detail if useNavigation push is available
-      // For now, if 'push' is not defined (as per previous context), we won't navigate directly
-      // If you intend to navigate, please ensure 'push' from useNavigation() is imported and used correctly.
+      toast.message = `\"${chat.title}\" has been forked successfully!`;
     } catch (error) {
       toast.style = Toast.Style.Failure;
       toast.title = "Fork Failed";
@@ -163,7 +185,7 @@ export default function Command(props: { scopeId?: string }) {
     return <Detail markdown={`Error: ${error?.message}`} />;
   }
 
-  if (isLoading) {
+  if (isLoading || isLoadingProfileDetails || isLoadingScopes) {
     return (
       <List navigationTitle="v0 Chats">
         <List.EmptyView title="Fetching your chats..." />
@@ -204,7 +226,14 @@ export default function Command(props: { scopeId?: string }) {
     <List
       navigationTitle="v0 Chats"
       searchBarPlaceholder="Search your chats..."
-      searchBarAccessory={<ScopeDropdown selectedScope={selectedScopeFilter} onScopeChange={setSelectedScopeFilter} />}
+      searchBarAccessory={
+        <ScopeDropdown
+          selectedScope={selectedScopeFilter}
+          onScopeChange={setSelectedScopeFilter}
+          availableScopes={scopesData?.data || []}
+          isLoadingScopes={isLoadingScopes}
+        />
+      }
     >
       {filteredChats
         .sort((a, b) => {

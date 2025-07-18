@@ -1,8 +1,8 @@
 import { ActionPanel, Action, showToast, Toast, Form, useNavigation } from "@raycast/api";
 import { useForm } from "@raycast/utils";
-import { ensureApiKey } from "../lib/ensureApiKey";
 import type { CreateMessageRequest } from "../types";
 import ChatDetail from "./ChatDetail";
+import { useActiveProfile } from "../hooks/useActiveProfile";
 
 interface FormValues {
   message: string;
@@ -18,11 +18,16 @@ interface AddMessageProps {
 }
 
 export default function AddMessage({ chatId, chatTitle, revalidateChats }: AddMessageProps) {
-  const apiKey = ensureApiKey();
   const { push } = useNavigation();
+  const { activeProfileApiKey, isLoadingProfileDetails } = useActiveProfile();
 
   const { handleSubmit, itemProps } = useForm<FormValues>({
     onSubmit: async (values) => {
+      if (!activeProfileApiKey) {
+        showToast(Toast.Style.Failure, "API Key not available. Please set it in Preferences or manage profiles.");
+        return;
+      }
+
       const toast = await showToast({
         style: Toast.Style.Animated,
         title: "Sending message...",
@@ -46,7 +51,7 @@ export default function AddMessage({ chatId, chatTitle, revalidateChats }: AddMe
         const response = await fetch(`https://api.v0.dev/v1/chats/${chatId}/messages`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${apiKey}`,
+            Authorization: `Bearer ${activeProfileApiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify(requestBody),
@@ -96,6 +101,7 @@ export default function AddMessage({ chatId, chatTitle, revalidateChats }: AddMe
           <Action.SubmitForm title="Send Message" onSubmit={handleSubmit} />
         </ActionPanel>
       }
+      isLoading={isLoadingProfileDetails}
     >
       <Form.TextArea
         {...itemProps.message}

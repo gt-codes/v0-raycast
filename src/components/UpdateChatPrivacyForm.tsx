@@ -1,6 +1,6 @@
 import { ActionPanel, Form, Action, showToast, Toast, useNavigation } from "@raycast/api";
 import { useForm } from "@raycast/utils";
-import { ensureApiKey } from "../lib/ensureApiKey";
+import { useActiveProfile } from "../hooks/useActiveProfile";
 
 interface UpdateChatPrivacyFormProps {
   chatId: string;
@@ -13,11 +13,16 @@ interface FormValues {
 }
 
 export default function UpdateChatPrivacyForm({ chatId, currentPrivacy, revalidateChats }: UpdateChatPrivacyFormProps) {
-  const apiKey = ensureApiKey();
   const { pop } = useNavigation();
+  const { activeProfileApiKey, isLoadingProfileDetails } = useActiveProfile();
 
   const { handleSubmit, itemProps } = useForm<FormValues>({
     onSubmit: async (values) => {
+      if (!activeProfileApiKey) {
+        showToast(Toast.Style.Failure, "API Key not available. Please set it in Preferences or manage profiles.");
+        return;
+      }
+
       const toast = await showToast({
         style: Toast.Style.Animated,
         title: "Updating chat privacy...",
@@ -27,7 +32,7 @@ export default function UpdateChatPrivacyForm({ chatId, currentPrivacy, revalida
         const response = await fetch(`https://api.v0.dev/v1/chats/${chatId}`, {
           method: "PATCH",
           headers: {
-            Authorization: `Bearer ${apiKey}`,
+            Authorization: `Bearer ${activeProfileApiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ privacy: values.privacy }),
@@ -68,6 +73,7 @@ export default function UpdateChatPrivacyForm({ chatId, currentPrivacy, revalida
           <Action.SubmitForm title="Update Privacy" onSubmit={handleSubmit} />
         </ActionPanel>
       }
+      isLoading={isLoadingProfileDetails}
     >
       <Form.Dropdown
         id="privacy"

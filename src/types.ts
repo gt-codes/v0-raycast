@@ -143,6 +143,13 @@ export interface CreateChatResponse {
   };
 }
 
+export interface CreateProjectResponse {
+  id: string;
+  object: "project";
+  name: string;
+  vercelProjectId?: string;
+}
+
 export interface CreateMessageRequest {
   message: string;
   attachments?: Array<{
@@ -201,4 +208,26 @@ export interface Project {
   object: "project";
   name: string;
   vercelProjectId?: string;
+}
+
+export interface Profile {
+  id: string;
+  name: string;
+  apiKey: string;
+  defaultScope?: string;
+}
+
+export interface ActiveProfileId {
+  id: string;
+}
+
+export interface ScopeSummary {
+  id: string;
+  object: "scope";
+  name?: string;
+}
+
+export interface FindScopesResponse {
+  object: "list";
+  data: ScopeSummary[];
 }

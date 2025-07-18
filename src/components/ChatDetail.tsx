@@ -1,24 +1,29 @@
 import { List, Icon, Color, Detail, ActionPanel, Action } from "@raycast/api";
 import { useFetch } from "@raycast/utils";
-import { ensureApiKey } from "../lib/ensureApiKey";
 import type { ChatDetailResponse } from "../types";
 import AddMessage from "./AddMessage";
+import { useActiveProfile } from "../hooks/useActiveProfile";
 
 export default function ChatDetail({ chatId }: { chatId: string }) {
-  const apiKey = ensureApiKey();
-  const { isLoading, data, error, mutate } = useFetch<ChatDetailResponse>(`https://api.v0.dev/v1/chats/${chatId}`, {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+  const { activeProfileApiKey, isLoadingProfileDetails } = useActiveProfile();
+
+  const { isLoading, data, error, mutate } = useFetch<ChatDetailResponse>(
+    activeProfileApiKey ? `https://api.v0.dev/v1/chats/${chatId}` : "",
+    {
+      headers: {
+        Authorization: `Bearer ${activeProfileApiKey}`,
+        "Content-Type": "application/json",
+      },
+      parseResponse: (response) => response.json(),
+      execute: !!activeProfileApiKey && !isLoadingProfileDetails,
     },
-    parseResponse: (response) => response.json(),
-  });
+  );
 
   if (error) {
     return <Detail markdown={`# Error\n\n${error.message}`} />;
   }
 
-  if (isLoading) {
+  if (isLoading || isLoadingProfileDetails) {
     return (
       <List navigationTitle="Chat Detail">
         <List.EmptyView title="Loading..." description="Fetching chat messages..." />

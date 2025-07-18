@@ -1,82 +1,84 @@
 import { ActionPanel, Form, Action, showToast, Toast, Icon } from "@raycast/api";
 import { useNavigation } from "@raycast/api";
-import { ensureApiKey } from "../lib/ensureApiKey";
-import { useState } from "react";
 import type { CreateProjectResponse } from "../types";
+import { useActiveProfile } from "../hooks/useActiveProfile";
+import { useForm, FormValidation } from "@raycast/utils"; // Import useForm and FormValidation
 
 interface CreateProjectFormProps {
   onProjectCreated: (projectId: string) => void;
 }
 
+interface CreateProjectFormValues {
+  name: string;
+  description?: string;
+}
+
 export default function CreateProjectForm({ onProjectCreated }: CreateProjectFormProps) {
-  const apiKey = ensureApiKey();
   const { pop } = useNavigation();
-  const [projectName, setProjectName] = useState<string>("");
-  const [projectDescription, setProjectDescription] = useState<string>("");
+  const { activeProfileApiKey, isLoadingProfileDetails } = useActiveProfile();
 
-  const createProject = async () => {
-    if (!projectName.trim()) {
-      showToast(Toast.Style.Failure, "Project name cannot be empty.");
-      return;
-    }
-
-    const toast = await showToast({
-      style: Toast.Style.Animated,
-      title: "Creating project...",
-    });
-
-    try {
-      const response = await fetch("https://api.v0.dev/v1/projects", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: projectName,
-          description: projectDescription,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to create project: ${errorData.error?.message || response.statusText}`);
+  const { handleSubmit, itemProps } = useForm<CreateProjectFormValues>({
+    onSubmit: async (values) => {
+      if (!activeProfileApiKey) {
+        showToast(Toast.Style.Failure, "API Key not available. Please set it in Preferences or manage profiles.");
+        return;
       }
 
-      const newProject: CreateProjectResponse = await response.json();
-      toast.style = Toast.Style.Success;
-      toast.title = "Project Created";
-      toast.message = `Project "${newProject.name}" created successfully.`;
-      onProjectCreated(newProject.id);
-      pop(); // Go back to the previous form (AssignProjectForm)
-    } catch (error) {
-      toast.style = Toast.Style.Failure;
-      toast.title = "Creation Failed";
-      toast.message = error instanceof Error ? error.message : "Failed to create project";
-    }
-  };
+      const toast = await showToast({
+        style: Toast.Style.Animated,
+        title: "Creating project...",
+      });
+
+      try {
+        const response = await fetch("https://api.v0.dev/v1/projects", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${activeProfileApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: values.name,
+            description: values.description,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Failed to create project: ${errorData.error?.message || response.statusText}`);
+        }
+
+        const newProject: CreateProjectResponse = await response.json();
+        toast.style = Toast.Style.Success;
+        toast.title = "Project Created";
+        toast.message = `Project \"${newProject.name}\" created successfully.`;
+        onProjectCreated(newProject.id);
+        pop(); // Go back to the previous form (AssignProjectForm)
+      } catch (error) {
+        toast.style = Toast.Style.Failure;
+        toast.title = "Creation Failed";
+        toast.message = error instanceof Error ? error.message : "Failed to create project";
+      }
+    },
+    validation: {
+      name: FormValidation.Required,
+    },
+  });
 
   return (
     <Form
       actions={
         <ActionPanel>
-          <Action.SubmitForm title="Create Project" onSubmit={createProject} icon={Icon.PlusCircle} />
+          <Action.SubmitForm title="Create Project" onSubmit={handleSubmit} icon={Icon.PlusCircle} />
         </ActionPanel>
       }
+      isLoading={isLoadingProfileDetails}
     >
-      <Form.TextField
-        id="projectName"
-        title="Project Name"
-        placeholder="Enter project name"
-        value={projectName}
-        onChange={setProjectName}
-      />
+      <Form.TextField id="projectName" title="Project Name" placeholder="Enter project name" {...itemProps.name} />
       <Form.TextArea
         id="projectDescription"
         title="Project Description (Optional)"
         placeholder="Enter project description"
-        value={projectDescription}
-        onChange={setProjectDescription}
+        {...itemProps.description}
       />
     </Form>
   );

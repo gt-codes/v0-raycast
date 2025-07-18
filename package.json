@@ -10,16 +10,9 @@
     {
       "name": "apiKey",
       "type": "password",
-      "title": "API Key",
+      "title": "Default API Key",
       "required": true,
       "description": "Generate an account token scoped to 'Full Account'. Get one from https://vercel.com/account/settings/tokens"
-    },
-    {
-      "name": "defaultScope",
-      "type": "textfield",
-      "title": "Default Scope ID",
-      "required": false,
-      "description": "Set a default scope ID for filtering chats."
     }
   ],
   "icon": "extension-icon.png",
@@ -44,12 +37,6 @@
       "mode": "view"
     },
     {
-      "name": "view-scopes",
-      "title": "View Scopes",
-      "description": "View your v0 API scopes",
-      "mode": "view"
-    },
-    {
       "name": "view-projects",
       "title": "View Projects",
       "description": "View all your v0 projects",
@@ -58,13 +45,20 @@
     {
       "name": "view-billing",
       "title": "View Billing",
-      "description": "View your v0 API billing information",
+      "description": "View your v0 billing information",
+      "mode": "view"
+    },
+    {
+      "name": "manage-profiles",
+      "title": "Manage Profiles",
+      "description": "Manage your v0 API key profiles for different teams (SSO/non-SSO)",
       "mode": "view"
     }
   ],
   "dependencies": {
     "@raycast/api": "^1.100.3",
     "@raycast/utils": "^1.17.0",
+    "uuid": "^11.1.0",
     "v0-sdk": "^0.0.12"
   },
   "devDependencies": {

@@ -1,21 +1,9 @@
 import { ActionPanel, Action, showToast, Toast, Form, useNavigation } from "@raycast/api";
 import { useForm, useFetch } from "@raycast/utils";
-import { ensureApiKey } from "./lib/ensureApiKey";
-import type { CreateChatRequest } from "./types";
+import type { CreateChatRequest, ScopeSummary, FindScopesResponse } from "./types";
 import ViewChats from "./view-chats";
-import { useProjects } from "./lib/projects";
-import { ensureDefaultScope } from "./lib/ensureDefaultScope";
-
-interface ScopeSummary {
-  id: string;
-  object: "scope";
-  name?: string;
-}
-
-interface FindScopesResponse {
-  object: "list";
-  data: ScopeSummary[];
-}
+import { useProjects } from "./hooks/useProjects";
+import { useActiveProfile } from "./hooks/useActiveProfile";
 
 interface FormValues {
   message: string;
@@ -29,27 +17,31 @@ interface FormValues {
 }
 
 export default function Command() {
-  const apiKey = ensureApiKey();
   const { push } = useNavigation();
   const { projects, isLoadingProjects } = useProjects();
-  const defaultScope = ensureDefaultScope();
+  const { activeProfileApiKey, activeProfileDefaultScope, isLoadingProfileDetails } = useActiveProfile();
 
   const { isLoading: isLoadingScopes, data: scopesData } = useFetch<FindScopesResponse>(
-    "https://api.v0.dev/v1/user/scopes",
+    activeProfileApiKey ? "https://api.v0.dev/v1/user/scopes" : "",
     {
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${activeProfileApiKey}`,
         "Content-Type": "application/json",
       },
       parseResponse: (response) => response.json(),
+      execute: !!activeProfileApiKey, // Only execute if apiKey is available
     },
   );
 
   const { handleSubmit, itemProps } = useForm<FormValues>({
     initialValues: {
-      scopeId: defaultScope || "",
+      scopeId: activeProfileDefaultScope || "",
     },
     onSubmit: async (values) => {
+      if (!activeProfileApiKey) {
+        showToast(Toast.Style.Failure, "API Key not available. Please set it in Preferences or manage profiles.");
+        return;
+      }
       const toast = await showToast({
         style: Toast.Style.Animated,
         title: "Creating chat...",
@@ -76,7 +68,7 @@ export default function Command() {
         const response = await fetch("https://api.v0.dev/v1/chats", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${apiKey}`,
+            Authorization: `Bearer ${activeProfileApiKey}`,
             "Content-Type": "application/json",
             "x-scope": values.scopeId || "",
           },
@@ -123,7 +115,7 @@ export default function Command() {
           <Action.SubmitForm title="Create Chat" onSubmit={handleSubmit} />
         </ActionPanel>
       }
-      isLoading={isLoadingProjects || isLoadingScopes}
+      isLoading={isLoadingProjects || isLoadingScopes || isLoadingProfileDetails}
     >
       <Form.Description text="Create a new chat with v0. Start by describing what you want to build or ask a question." />
 

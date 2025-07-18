@@ -1,6 +1,7 @@
-import { Detail, List, Icon, Color } from "@raycast/api";
+import { Detail, List, Icon, Color, showToast, Toast } from "@raycast/api";
 import { useFetch } from "@raycast/utils";
-import { ensureApiKey } from "./lib/ensureApiKey";
+import { useActiveProfile } from "./hooks/useActiveProfile";
+import { useState, useEffect } from "react";
 
 interface TokenBillingData {
   plan: string;
@@ -50,26 +51,32 @@ interface PlanResponse {
 }
 
 export default function ViewBillingCommand() {
-  const apiKey = ensureApiKey();
+  const { activeProfileApiKey, isLoadingProfileDetails } = useActiveProfile();
 
-  const { isLoading, data, error } = useFetch<BillingResponse>("https://api.v0.dev/v1/user/billing", {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+  const commonHeaders = activeProfileApiKey
+    ? {
+        Authorization: `Bearer ${activeProfileApiKey}`,
+        "Content-Type": "application/json",
+      }
+    : undefined;
+
+  const { isLoading, data, error } = useFetch<BillingResponse>(
+    activeProfileApiKey ? "https://api.v0.dev/v1/user/billing" : "",
+    {
+      headers: commonHeaders,
+      parseResponse: (response) => response.json(),
+      execute: !!activeProfileApiKey && !isLoadingProfileDetails,
     },
-    parseResponse: (response) => response.json(),
-  });
+  );
 
   const {
     isLoading: isLoadingPlan,
     data: planData,
     error: planError,
-  } = useFetch<PlanResponse>("https://api.v0.dev/v1/user/plan", {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
+  } = useFetch<PlanResponse>(activeProfileApiKey ? "https://api.v0.dev/v1/user/plan" : "", {
+    headers: commonHeaders,
     parseResponse: (response) => response.json(),
+    execute: !!activeProfileApiKey && !isLoadingProfileDetails,
   });
 
   console.log("Plan Data:", planData);
@@ -78,7 +85,7 @@ export default function ViewBillingCommand() {
     return <Detail markdown={`Error: ${error?.message || planError?.message}`} />;
   }
 
-  if (isLoading || isLoadingPlan) {
+  if (isLoading || isLoadingPlan || isLoadingProfileDetails) {
     return (
       <List navigationTitle="v0 Billing">
         <List.EmptyView title="Loading..." description="Fetching your billing information..." />
