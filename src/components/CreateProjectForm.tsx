@@ -50,7 +50,7 @@ export default function CreateProjectForm({ onProjectCreated }: CreateProjectFor
         const newProject: CreateProjectResponse = await response.json();
         toast.style = Toast.Style.Success;
         toast.title = "Project Created";
-        toast.message = `Project \"${newProject.name}\" created successfully.`;
+        toast.message = `Project "${newProject.name}" created successfully.`;
         onProjectCreated(newProject.id);
         pop(); // Go back to the previous form (AssignProjectForm)
       } catch (error) {
@@ -73,9 +73,8 @@ export default function CreateProjectForm({ onProjectCreated }: CreateProjectFor
       }
       isLoading={isLoadingProfileDetails}
     >
-      <Form.TextField id="projectName" title="Project Name" placeholder="Enter project name" {...itemProps.name} />
+      <Form.TextField title="Project Name" placeholder="Enter project name" {...itemProps.name} />
       <Form.TextArea
-        id="projectDescription"
         title="Project Description (Optional)"
         placeholder="Enter project description"
         {...itemProps.description}

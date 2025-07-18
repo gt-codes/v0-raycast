@@ -1,7 +1,6 @@
-import { Detail, List, Icon, Color, showToast, Toast } from "@raycast/api";
+import { Detail, List, Icon, Color } from "@raycast/api";
 import { useFetch } from "@raycast/utils";
 import { useActiveProfile } from "./hooks/useActiveProfile";
-import { useState, useEffect } from "react";
 
 interface TokenBillingData {
   plan: string;

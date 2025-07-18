@@ -1,26 +1,17 @@
 import { ActionPanel, List, Action, useNavigation, Form, showToast, Toast, getPreferenceValues } from "@raycast/api";
 import { useEffect, useState } from "react";
 import { useCachedState } from "@raycast/utils";
-import type { Profile } from "./types";
+import type { Profile, ScopeSummary } from "./types"; // Import ScopeSummary
 import { v4 as uuidv4 } from "uuid";
-import { useFetch } from "@raycast/utils";
 import { Icon } from "@raycast/api";
 import { getActiveProfileDetails } from "./lib/profile-utils";
+import { useScopes } from "./hooks/useScopes"; // Import the new hook
 
 interface Preferences {
   apiKey: string;
 }
 
-interface ScopeSummary {
-  id: string;
-  object: "scope";
-  name?: string;
-}
-
-interface FindScopesResponse {
-  object: "list";
-  data: ScopeSummary[];
-}
+// Removed ScopeSummary and FindScopesResponse interfaces from here
 
 function AddProfileForm(props: { onAdd: (profile: Profile) => void }) {
   const { pop } = useNavigation();
@@ -57,17 +48,7 @@ function SetDefaultScopeForm(props: { profile: Profile; onUpdate: (profile: Prof
   const { pop } = useNavigation();
   const [selectedScopeId, setSelectedScopeId] = useState<string>(props.profile.defaultScope || "");
 
-  const { isLoading: isLoadingScopes, data: scopesData } = useFetch<FindScopesResponse>(
-    props.profile.apiKey ? "https://api.v0.dev/v1/user/scopes" : "",
-    {
-      headers: {
-        Authorization: `Bearer ${props.profile.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      parseResponse: (response) => response.json(),
-      execute: !!props.profile.apiKey,
-    },
-  );
+  const { scopes, isLoadingScopes } = useScopes(props.profile.apiKey); // Use the new useScopes hook
 
   async function handleSubmit(values: { scopeId: string }) {
     props.onUpdate({
@@ -99,7 +80,7 @@ function SetDefaultScopeForm(props: { profile: Profile; onUpdate: (profile: Prof
         isLoading={isLoadingScopes}
       >
         <Form.Dropdown.Item value="" title="No Default Scope" />
-        {scopesData?.data.map((scope: ScopeSummary) => (
+        {scopes?.map((scope: ScopeSummary) => (
           <Form.Dropdown.Item key={scope.id} value={scope.id} title={scope.name || "Untitled Scope"} />
         ))}
       </Form.Dropdown>

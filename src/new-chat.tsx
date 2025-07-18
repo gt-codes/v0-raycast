@@ -1,9 +1,10 @@
 import { ActionPanel, Action, showToast, Toast, Form, useNavigation } from "@raycast/api";
-import { useForm, useFetch } from "@raycast/utils";
-import type { CreateChatRequest, ScopeSummary, FindScopesResponse } from "./types";
+import { useForm } from "@raycast/utils";
+import type { CreateChatRequest, ScopeSummary } from "./types";
 import ViewChats from "./view-chats";
 import { useProjects } from "./hooks/useProjects";
 import { useActiveProfile } from "./hooks/useActiveProfile";
+import { useScopes } from "./hooks/useScopes";
 
 interface FormValues {
   message: string;
@@ -20,18 +21,7 @@ export default function Command() {
   const { push } = useNavigation();
   const { projects, isLoadingProjects } = useProjects();
   const { activeProfileApiKey, activeProfileDefaultScope, isLoadingProfileDetails } = useActiveProfile();
-
-  const { isLoading: isLoadingScopes, data: scopesData } = useFetch<FindScopesResponse>(
-    activeProfileApiKey ? "https://api.v0.dev/v1/user/scopes" : "",
-    {
-      headers: {
-        Authorization: `Bearer ${activeProfileApiKey}`,
-        "Content-Type": "application/json",
-      },
-      parseResponse: (response) => response.json(),
-      execute: !!activeProfileApiKey, // Only execute if apiKey is available
-    },
-  );
+  const { scopes: scopesData, isLoadingScopes } = useScopes(activeProfileApiKey);
 
   const { handleSubmit, itemProps } = useForm<FormValues>({
     initialValues: {
@@ -146,7 +136,7 @@ export default function Command() {
         isLoading={isLoadingScopes}
       >
         <Form.Dropdown.Item value="" title="None" />
-        {scopesData?.data.map((scope: ScopeSummary) => (
+        {scopesData?.map((scope: ScopeSummary) => (
           <Form.Dropdown.Item key={scope.id} value={scope.id} title={scope.name || "Untitled Scope"} />
         ))}
       </Form.Dropdown>

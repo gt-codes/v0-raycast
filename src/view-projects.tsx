@@ -3,8 +3,7 @@ import { useProjects } from "./hooks/useProjects";
 import { useState, useEffect } from "react";
 import { ScopeDropdown } from "./components/ScopeDropdown";
 import { useActiveProfile } from "./hooks/useActiveProfile";
-import { useFetch } from "@raycast/utils";
-import type { FindScopesResponse } from "./types";
+import { useScopes } from "./hooks/useScopes"; // Import useScopes
 
 export default function ViewProjectsCommand() {
   const { activeProfileApiKey, activeProfileDefaultScope, isLoadingProfileDetails } = useActiveProfile();
@@ -19,17 +18,7 @@ export default function ViewProjectsCommand() {
 
   const { projects, isLoadingProjects, projectError } = useProjects(selectedScope);
 
-  const { isLoading: isLoadingScopes, data: scopesData } = useFetch<FindScopesResponse>(
-    activeProfileApiKey ? "https://api.v0.dev/v1/user/scopes" : "",
-    {
-      headers: {
-        Authorization: `Bearer ${activeProfileApiKey}`,
-        "Content-Type": "application/json",
-      },
-      parseResponse: (response) => response.json(),
-      execute: !!activeProfileApiKey, // Only execute if apiKey is available
-    },
-  );
+  const { scopes: scopesData, isLoadingScopes } = useScopes(activeProfileApiKey); // Use useScopes hook
 
   if (projectError) {
     return <Detail markdown={`Error: ${projectError.message}`} />;
@@ -51,7 +40,7 @@ export default function ViewProjectsCommand() {
         <ScopeDropdown
           selectedScope={selectedScope}
           onScopeChange={setSelectedScope}
-          availableScopes={scopesData?.data || []}
+          availableScopes={scopesData || []}
           isLoadingScopes={isLoadingScopes}
         />
       }

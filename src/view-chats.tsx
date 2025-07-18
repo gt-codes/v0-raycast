@@ -1,6 +1,6 @@
 import { ActionPanel, Detail, List, Action, Icon, Color, showToast, Toast, confirmAlert } from "@raycast/api";
 import { useFetch } from "@raycast/utils";
-import type { ChatSummary, FindChatsResponse, ForkChatResponse, ScopeSummary, FindScopesResponse } from "./types";
+import type { ChatSummary, FindChatsResponse, ForkChatResponse, ScopeSummary } from "./types";
 import ChatDetail from "./components/ChatDetail";
 import AddMessage from "./components/AddMessage";
 import { useNavigation } from "@raycast/api";
@@ -9,6 +9,7 @@ import { useProjects } from "./hooks/useProjects";
 import { useState, useMemo, useEffect } from "react";
 import UpdateChatPrivacyForm from "./components/UpdateChatPrivacyForm";
 import { useActiveProfile } from "./hooks/useActiveProfile";
+import { useScopes } from "./hooks/useScopes";
 import { ScopeDropdown } from "./components/ScopeDropdown";
 
 export default function Command(props: { scopeId?: string }) {
@@ -40,17 +41,7 @@ export default function Command(props: { scopeId?: string }) {
     },
   );
 
-  const { isLoading: isLoadingScopes, data: scopesData } = useFetch<FindScopesResponse>(
-    activeProfileApiKey ? "https://api.v0.dev/v1/user/scopes" : "",
-    {
-      headers: {
-        Authorization: `Bearer ${activeProfileApiKey}`,
-        "Content-Type": "application/json",
-      },
-      parseResponse: (response) => response.json(),
-      execute: !!activeProfileApiKey, // Only execute if apiKey is available
-    },
-  );
+  const { scopes: scopesData, isLoadingScopes } = useScopes(activeProfileApiKey); // Use useScopes hook
 
   // Filter chats based on the selectedProjectIdFilter
   const filteredChats = useMemo(() => {
@@ -230,7 +221,7 @@ export default function Command(props: { scopeId?: string }) {
         <ScopeDropdown
           selectedScope={selectedScopeFilter}
           onScopeChange={setSelectedScopeFilter}
-          availableScopes={scopesData?.data || []}
+          availableScopes={scopesData || []}
           isLoadingScopes={isLoadingScopes}
         />
       }
