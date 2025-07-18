@@ -19,6 +19,7 @@ export interface ChatSummary {
     status: "pending" | "completed" | "failed";
   };
   projectId?: string;
+  scopeId?: string;
 }
 
 export interface ChatDetailResponse {

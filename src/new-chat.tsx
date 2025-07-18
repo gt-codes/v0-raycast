@@ -1,9 +1,21 @@
 import { ActionPanel, Action, showToast, Toast, Form, useNavigation } from "@raycast/api";
-import { useForm } from "@raycast/utils";
+import { useForm, useFetch } from "@raycast/utils";
 import { ensureApiKey } from "./lib/ensureApiKey";
 import type { CreateChatRequest } from "./types";
 import ViewChats from "./view-chats";
 import { useProjects } from "./lib/projects";
+import { ensureDefaultScope } from "./lib/ensureDefaultScope";
+
+interface ScopeSummary {
+  id: string;
+  object: "scope";
+  name?: string;
+}
+
+interface FindScopesResponse {
+  object: "list";
+  data: ScopeSummary[];
+}
 
 interface FormValues {
   message: string;
@@ -13,14 +25,30 @@ interface FormValues {
   modelId?: "v0-1.5-sm" | "v0-1.5-md" | "v0-1.5-lg";
   imageGenerations?: boolean;
   thinking?: boolean;
+  scopeId?: string;
 }
 
 export default function Command() {
   const apiKey = ensureApiKey();
   const { push } = useNavigation();
   const { projects, isLoadingProjects } = useProjects();
+  const defaultScope = ensureDefaultScope();
+
+  const { isLoading: isLoadingScopes, data: scopesData } = useFetch<FindScopesResponse>(
+    "https://api.v0.dev/v1/user/scopes",
+    {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      parseResponse: (response) => response.json(),
+    },
+  );
 
   const { handleSubmit, itemProps } = useForm<FormValues>({
+    initialValues: {
+      scopeId: defaultScope || "",
+    },
     onSubmit: async (values) => {
       const toast = await showToast({
         style: Toast.Style.Animated,
@@ -50,6 +78,7 @@ export default function Command() {
           headers: {
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
+            "x-scope": values.scopeId || "",
           },
           body: JSON.stringify(requestBody),
         });
@@ -65,7 +94,7 @@ export default function Command() {
         toast.message = "Your new chat has been created successfully!";
 
         // Push the view-chats component to show the newly created chat
-        push(<ViewChats />);
+        push(<ViewChats scopeId={values.scopeId} />);
 
         return;
       } catch (error) {
@@ -94,6 +123,7 @@ export default function Command() {
           <Action.SubmitForm title="Create Chat" onSubmit={handleSubmit} />
         </ActionPanel>
       }
+      isLoading={isLoadingProjects || isLoadingScopes}
     >
       <Form.Description text="Create a new chat with v0. Start by describing what you want to build or ask a question." />
 
@@ -114,6 +144,19 @@ export default function Command() {
         <Form.Dropdown.Item value="v0-1.5-sm" title="v0-1.5-sm" />
         <Form.Dropdown.Item value="v0-1.5-md" title="v0-1.5-md" />
         <Form.Dropdown.Item value="v0-1.5-lg" title="v0-1.5-lg" />
+      </Form.Dropdown>
+
+      <Form.Dropdown
+        id="scopeId"
+        title="Scope (Optional)"
+        value={itemProps.scopeId.value || ""}
+        onChange={itemProps.scopeId.onChange}
+        isLoading={isLoadingScopes}
+      >
+        <Form.Dropdown.Item value="" title="None" />
+        {scopesData?.data.map((scope: ScopeSummary) => (
+          <Form.Dropdown.Item key={scope.id} value={scope.id} title={scope.name || "Untitled Scope"} />
+        ))}
       </Form.Dropdown>
 
       <Form.Separator />

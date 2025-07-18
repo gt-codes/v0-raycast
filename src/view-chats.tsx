@@ -23,12 +23,12 @@ interface FindScopesResponse {
   data: ScopeSummary[];
 }
 
-export default function Command() {
+export default function Command(props: { scopeId?: string }) {
   const apiKey = ensureApiKey();
   const { push } = useNavigation();
   const defaultScope = ensureDefaultScope();
 
-  const [selectedScopeFilter, setSelectedScopeFilter] = useState<string | null>(defaultScope);
+  const [selectedScopeFilter, setSelectedScopeFilter] = useState<string | null>(props.scopeId || defaultScope);
 
   const { isLoading, data, error, mutate } = useFetch<FindChatsResponse>("https://api.v0.dev/v1/chats", {
     headers: {
@@ -58,8 +58,6 @@ export default function Command() {
   // Filter chats based on the selectedProjectIdFilter
   const filteredChats = useMemo(() => {
     if (!data?.data) return [];
-    // if (!selectedProjectIdFilter) return data.data; // Show all chats if no filter is selected
-    // return data.data.filter((chat) => chat.projectId === selectedProjectIdFilter);
     return data.data;
   }, [data?.data]);
 
