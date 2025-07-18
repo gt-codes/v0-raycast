@@ -11,17 +11,7 @@ import { useProjects } from "./lib/projects";
 import { useState, useMemo } from "react";
 import UpdateChatPrivacyForm from "./components/UpdateChatPrivacyForm";
 import { ensureDefaultScope } from "./lib/ensureDefaultScope";
-
-interface ScopeSummary {
-  id: string;
-  object: "scope";
-  name?: string;
-}
-
-interface FindScopesResponse {
-  object: "list";
-  data: ScopeSummary[];
-}
+import { ScopeDropdown } from "./components/ScopeDropdown";
 
 export default function Command(props: { scopeId?: string }) {
   const apiKey = ensureApiKey();
@@ -39,18 +29,6 @@ export default function Command(props: { scopeId?: string }) {
     parseResponse: (response) => response.json(),
     keepPreviousData: true, // Keep displaying previous data while new data is being fetched
     cache: "force-cache", // Use cache aggressively
-  });
-
-  const {
-    isLoading: isLoadingScopes,
-    data: scopesData,
-    error: scopesError,
-  } = useFetch<FindScopesResponse>("https://api.v0.dev/v1/user/scopes", {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    parseResponse: (response) => response.json(),
   });
 
   const { projects } = useProjects();
@@ -181,11 +159,11 @@ export default function Command(props: { scopeId?: string }) {
     }
   };
 
-  if (error || scopesError) {
-    return <Detail markdown={`Error: ${error?.message || scopesError?.message}`} />;
+  if (error) {
+    return <Detail markdown={`Error: ${error?.message}`} />;
   }
 
-  if (isLoading || isLoadingScopes) {
+  if (isLoading) {
     return (
       <List navigationTitle="v0 Chats">
         <List.EmptyView title="Fetching your chats..." />
@@ -226,20 +204,7 @@ export default function Command(props: { scopeId?: string }) {
     <List
       navigationTitle="v0 Chats"
       searchBarPlaceholder="Search your chats..."
-      searchBarAccessory={
-        <List.Dropdown
-          id="scopeFilter"
-          tooltip="Filter Chats by Scope"
-          value={selectedScopeFilter || "all"}
-          onChange={(newValue) => setSelectedScopeFilter(newValue === "all" ? null : newValue)}
-          storeValue
-        >
-          <List.Dropdown.Item value="all" title="All Scopes" icon={Icon.Globe} />
-          {scopesData?.data.map((scope: ScopeSummary) => (
-            <List.Dropdown.Item key={scope.id} value={scope.id} title={scope.name || "Untitled Scope"} />
-          ))}
-        </List.Dropdown>
-      }
+      searchBarAccessory={<ScopeDropdown selectedScope={selectedScopeFilter} onScopeChange={setSelectedScopeFilter} />}
     >
       {filteredChats
         .sort((a, b) => {
