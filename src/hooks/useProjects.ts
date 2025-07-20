@@ -2,6 +2,8 @@ import { useFetch } from "@raycast/utils";
 import { getActiveProfileDetails } from "../lib/profile-utils";
 import type { FindProjectsResponse } from "../types";
 import { useState, useEffect } from "react";
+import { useCachedState } from "@raycast/utils";
+import type { Profile } from "../types";
 
 interface ProjectSummary {
   id: string;
@@ -21,10 +23,12 @@ export function useProjects(scope: string | null = null): UseProjectsResult {
   const [activeProfileApiKey, setActiveProfileApiKey] = useState<string | undefined>(undefined);
   const [activeProfileDefaultScope, setActiveProfileDefaultScope] = useState<string | null>(null);
   const [isLoadingProfileDetails, setIsLoadingProfileDetails] = useState(true);
+  const [profiles] = useCachedState<Profile[]>("v0-profiles", []); // Get profiles
+  const [activeProfileId] = useCachedState<string | undefined>("v0-active-profile-id", undefined); // Get active profile ID
 
   useEffect(() => {
     async function fetchProfileDetails() {
-      const { apiKey, defaultScope } = await getActiveProfileDetails();
+      const { apiKey, defaultScope } = await getActiveProfileDetails(profiles, activeProfileId); // Pass profiles and activeProfileId
       setActiveProfileApiKey(apiKey);
       setActiveProfileDefaultScope(defaultScope);
       setIsLoadingProfileDetails(false);

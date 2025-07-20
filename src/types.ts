@@ -6,7 +6,7 @@ export interface FindChatsResponse {
 export interface ChatSummary {
   id: string;
   object: "chat";
-  title?: string;
+  title: string;
   createdAt: string;
   updatedAt: string;
   favorite: boolean;
@@ -19,6 +19,7 @@ export interface ChatSummary {
     status: "pending" | "completed" | "failed";
   };
   projectId?: string;
+  projectName?: string;
   scopeId?: string;
 }
 

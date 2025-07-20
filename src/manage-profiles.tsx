@@ -1,4 +1,15 @@
-import { ActionPanel, List, Action, useNavigation, Form, showToast, Toast, getPreferenceValues } from "@raycast/api";
+import {
+  ActionPanel,
+  List,
+  Action,
+  useNavigation,
+  Form,
+  showToast,
+  Toast,
+  getPreferenceValues,
+  confirmAlert,
+  Alert,
+} from "@raycast/api";
 import { useEffect, useState } from "react";
 import { useCachedState } from "@raycast/utils";
 import type { Profile, ScopeSummary } from "./types";
@@ -38,6 +49,44 @@ function AddProfileForm(props: { onAdd: (profile: Profile) => void }) {
     >
       <Form.TextField id="name" title="Profile Name" placeholder="e.g., My SSO Team" />
       <Form.PasswordField id="apiKey" title="API Key" placeholder="Enter your v0 API key" />
+    </Form>
+  );
+}
+
+function RenameProfileForm(props: { profile: Profile; onUpdate: (profile: Profile) => void }) {
+  const { pop } = useNavigation();
+
+  async function handleSubmit(values: { name: string }) {
+    if (!values.name) {
+      showToast({
+        style: Toast.Style.Failure,
+        title: "Profile name cannot be empty.",
+      });
+      return;
+    }
+
+    props.onUpdate({
+      ...props.profile,
+      name: values.name,
+    });
+    showToast(Toast.Style.Success, `Profile renamed to "${values.name}"`);
+    pop();
+  }
+
+  return (
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Rename Profile" onSubmit={handleSubmit} />
+        </ActionPanel>
+      }
+    >
+      <Form.TextField
+        id="name"
+        title="New Profile Name"
+        placeholder="Enter new name"
+        defaultValue={props.profile.name}
+      />
     </Form>
   );
 }
@@ -151,6 +200,36 @@ export default function ManageProfiles() {
     setProfiles((prev) => prev?.map((p) => (p.id === updatedProfile.id ? updatedProfile : p)) || []);
   };
 
+  const handleRenameProfile = (updatedProfile: Profile) => {
+    setProfiles((prev) => prev?.map((p) => (p.id === updatedProfile.id ? updatedProfile : p)) || []);
+  };
+
+  const handleDeleteProfile = async (id: string) => {
+    if (id === "default") {
+      showToast(Toast.Style.Failure, "Cannot delete the default profile.");
+      return;
+    }
+
+    if (
+      await confirmAlert({
+        title: "Delete Profile",
+        message: "Are you sure you want to delete this profile? This action cannot be undone.",
+        icon: Icon.Trash,
+        primaryAction: { title: "Delete", style: Alert.ActionStyle.Destructive },
+      })
+    ) {
+      setProfiles((prev) => {
+        const updatedProfiles = prev?.filter((p) => p.id !== id) || [];
+        if (id === activeProfileId) {
+          // If the deleted profile was active, set the first available profile as active
+          setActiveProfileId(updatedProfiles.length > 0 ? updatedProfiles[0].id : undefined);
+        }
+        showToast(Toast.Style.Success, "Profile deleted successfully!");
+        return updatedProfiles;
+      });
+    }
+  };
+
   return (
     <List isLoading={isLoadingInitialScopes}>
       <List.Section title="Profiles">
@@ -173,11 +252,28 @@ export default function ManageProfiles() {
                   icon={Icon.Star}
                 />
                 <Action.Push
-                  title="Add New Profile"
-                  target={<AddProfileForm onAdd={handleAddProfile} />}
-                  icon={Icon.Plus}
-                  shortcut={{ modifiers: ["cmd"], key: "n" }}
+                  title="Rename Profile"
+                  target={<RenameProfileForm profile={profile} onUpdate={handleRenameProfile} />}
+                  icon={Icon.Pencil}
+                  shortcut={{ modifiers: ["cmd"], key: "r" }}
                 />
+                <ActionPanel.Section>
+                  <Action.Push
+                    title="Add New Profile"
+                    target={<AddProfileForm onAdd={handleAddProfile} />}
+                    icon={Icon.Plus}
+                    shortcut={{ modifiers: ["cmd"], key: "n" }}
+                  />
+                  {profile.id !== "default" && (
+                    <Action
+                      title="Delete Profile"
+                      onAction={() => handleDeleteProfile(profile.id)}
+                      icon={Icon.Trash}
+                      style={Action.Style.Destructive}
+                      shortcut={{ modifiers: ["cmd"], key: "d" }}
+                    />
+                  )}
+                </ActionPanel.Section>
               </ActionPanel>
             }
           />

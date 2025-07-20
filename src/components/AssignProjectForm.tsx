@@ -13,7 +13,8 @@ interface AssignProjectFormProps {
 
 export default function AssignProjectForm({ chat, revalidateChats }: AssignProjectFormProps) {
   const { pop } = useNavigation();
-  const { projects, isLoadingProjects, projectError, revalidateProjects } = useProjects();
+  // Pass the chat's scopeId to useProjects to filter projects by the current chat's scope
+  const { projects, isLoadingProjects, projectError, revalidateProjects } = useProjects(chat.scopeId);
   const [selectedProjectId, setSelectedProjectId] = useState<string>(chat.projectId || "");
 
   const { activeProfileApiKey, isLoadingProfileDetails } = useActiveProfile();

@@ -1,12 +1,12 @@
 import { ActionPanel, Detail, List, Action, Icon, Color, showToast, Toast, confirmAlert } from "@raycast/api";
 import { useFetch } from "@raycast/utils";
-import type { ChatSummary, FindChatsResponse, ForkChatResponse, ScopeSummary } from "./types";
+import type { ChatSummary, FindChatsResponse, ForkChatResponse } from "./types";
 import ChatDetail from "./components/ChatDetail";
 import AddMessage from "./components/AddMessage";
 import { useNavigation } from "@raycast/api";
 import AssignProjectForm from "./components/AssignProjectForm";
 import { useProjects } from "./hooks/useProjects";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import UpdateChatPrivacyForm from "./components/UpdateChatPrivacyForm";
 import { useActiveProfile } from "./hooks/useActiveProfile";
 import { useScopes } from "./hooks/useScopes";
@@ -43,12 +43,6 @@ export default function Command(props: { scopeId?: string }) {
 
   const { scopes: scopesData, isLoadingScopes } = useScopes(activeProfileApiKey); // Use useScopes hook
 
-  // Filter chats based on the selectedProjectIdFilter
-  const filteredChats = useMemo(() => {
-    if (!data?.data) return [];
-    return data.data;
-  }, [data?.data]);
-
   const deleteChat = async (chatId: string, chatTitle: string) => {
     if (!activeProfileApiKey) {
       showToast(Toast.Style.Failure, "API Key not available.");
@@ -82,7 +76,7 @@ export default function Command(props: { scopeId?: string }) {
 
       toast.style = Toast.Style.Success;
       toast.title = "Chat Deleted";
-      toast.message = `\"${chatTitle}\" has been deleted successfully.`;
+      toast.message = `"${chatTitle}" has been deleted successfully.`;
     } catch (error) {
       toast.style = Toast.Style.Failure;
       toast.title = "Delete Failed";
@@ -164,7 +158,7 @@ export default function Command(props: { scopeId?: string }) {
 
       toast.style = Toast.Style.Success;
       toast.title = "Chat Forked";
-      toast.message = `\"${chat.title}\" has been forked successfully!`;
+      toast.message = `"${chat.title}" has been forked successfully!`;
     } catch (error) {
       toast.style = Toast.Style.Failure;
       toast.title = "Fork Failed";
@@ -226,7 +220,7 @@ export default function Command(props: { scopeId?: string }) {
         />
       }
     >
-      {filteredChats
+      {(data?.data || [])
         .sort((a, b) => {
           // Sort favorited chats to the top
           if (a.favorite && !b.favorite) return -1;
@@ -276,6 +270,9 @@ export default function Command(props: { scopeId?: string }) {
                   target={<AssignProjectForm chat={chat} revalidateChats={mutate} />}
                   shortcut={{ modifiers: ["cmd", "shift"], key: "a" }}
                 />
+                {chat.projectId && (
+                  <Action.CopyToClipboard title="Copy Project ID" content={chat.projectId} icon={Icon.Clipboard} />
+                )}
                 <Action.Push
                   title="Update Chat Privacy"
                   icon={Icon.Lock}
