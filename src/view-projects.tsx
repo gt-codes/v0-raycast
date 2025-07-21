@@ -1,9 +1,10 @@
-import { List, Detail, Icon } from "@raycast/api";
+import { List, Detail, Icon, ActionPanel, Action } from "@raycast/api";
 import { useProjects } from "./hooks/useProjects";
 import { useState, useEffect } from "react";
 import { ScopeDropdown } from "./components/ScopeDropdown";
 import { useActiveProfile } from "./hooks/useActiveProfile";
 import { useScopes } from "./hooks/useScopes";
+import ProjectChats from "./view-projects-chats";
 
 export default function ViewProjectsCommand() {
   const { activeProfileApiKey, activeProfileDefaultScope, isLoadingProfileDetails } = useActiveProfile();
@@ -51,6 +52,11 @@ export default function ViewProjectsCommand() {
           icon={Icon.Tag}
           title={project.name}
           accessories={[{ text: `ID: ${project.id}` }]}
+          actions={
+            <ActionPanel>
+              <Action.Push title="View Chats" icon={Icon.Message} target={<ProjectChats projectId={project.id} />} />
+            </ActionPanel>
+          }
         />
       ))}
     </List>

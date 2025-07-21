@@ -196,6 +196,7 @@ export interface ProjectDetail {
   id: string;
   object: "project";
   name: string;
+  chats: ChatSummary[];
   vercelProjectId?: string;
 }
 
@@ -232,4 +233,12 @@ export interface ScopeSummary {
 export interface FindScopesResponse {
   object: "list";
   data: ScopeSummary[];
+}
+
+export interface ProjectChatsResponse {
+  object: "project";
+  id: string;
+  name: string;
+  description?: string;
+  chats: ChatSummary[];
 }

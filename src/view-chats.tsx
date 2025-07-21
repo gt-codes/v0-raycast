@@ -1,5 +1,5 @@
-import { ActionPanel, Detail, List, Action, Icon, Color, showToast, Toast, confirmAlert } from "@raycast/api";
-import type { ChatSummary, FindChatsResponse, ForkChatResponse } from "./types";
+import { ActionPanel, Detail, List, Action, Icon, showToast, Toast, confirmAlert } from "@raycast/api";
+import type { ChatSummary, FindChatsResponse, ForkChatResponse, ProjectChatsResponse } from "./types";
 import ChatDetail from "./components/ChatDetail";
 import AddMessage from "./components/AddMessage";
 import { useNavigation } from "@raycast/api";
@@ -10,11 +10,11 @@ import UpdateChatPrivacyForm from "./components/UpdateChatPrivacyForm";
 import { useActiveProfile } from "./hooks/useActiveProfile";
 import { useScopes } from "./hooks/useScopes";
 import { ScopeDropdown } from "./components/ScopeDropdown";
-import ChatMessagesDetail from "./components/ChatMessagesDetail";
 import { useV0Api } from "./hooks/useV0Api";
 import { v0ApiFetcher, V0ApiError } from "./lib/v0-api-utils";
+import ChatMetadataDetail from "./components/ChatMetadataDetail";
 
-export default function Command(props: { scopeId?: string }) {
+export default function Command(props: { scopeId?: string; projectId?: string }) {
   const { push } = useNavigation();
   const { projects } = useProjects();
   const { activeProfileApiKey, activeProfileDefaultScope, isLoadingProfileDetails } = useActiveProfile();
@@ -28,8 +28,12 @@ export default function Command(props: { scopeId?: string }) {
     }
   }, [activeProfileDefaultScope, isLoadingProfileDetails, props.scopeId]);
 
-  const { isLoading, data, error, mutate } = useV0Api<FindChatsResponse>(
-    activeProfileApiKey && !isLoadingProfileDetails ? "https://api.v0.dev/v1/chats" : "",
+  const { isLoading, data, error, mutate } = useV0Api<FindChatsResponse | ProjectChatsResponse>(
+    activeProfileApiKey && !isLoadingProfileDetails
+      ? props.projectId
+        ? `https://api.v0.dev/v1/projects/${props.projectId}`
+        : "https://api.v0.dev/v1/chats"
+      : "",
     {
       method: "GET",
       headers: {
@@ -62,11 +66,14 @@ export default function Command(props: { scopeId?: string }) {
           },
         }),
         {
-          optimisticUpdate(data) {
-            return {
-              ...data,
-              data: data.data.filter((chat) => chat.id !== chatId),
-            };
+          optimisticUpdate(data: FindChatsResponse | ProjectChatsResponse): FindChatsResponse | ProjectChatsResponse {
+            const updatedData = { ...data };
+            if ("data" in updatedData) {
+              updatedData.data = updatedData.data.filter((chat) => chat.id !== chatId);
+            } else if ("chats" in updatedData) {
+              updatedData.chats = updatedData.chats.filter((chat) => chat.id !== chatId);
+            }
+            return updatedData;
           },
           rollbackOnError: true,
         },
@@ -102,13 +109,18 @@ export default function Command(props: { scopeId?: string }) {
           body: { isFavorite },
         }),
         {
-          optimisticUpdate(data: FindChatsResponse): FindChatsResponse {
-            return {
-              ...data,
-              data: data.data.map((chat: ChatSummary) =>
+          optimisticUpdate(data: FindChatsResponse | ProjectChatsResponse): FindChatsResponse | ProjectChatsResponse {
+            const updatedData = { ...data };
+            if ("data" in updatedData) {
+              updatedData.data = updatedData.data.map((chat: ChatSummary) =>
                 chat.id === chatId ? { ...chat, favorite: isFavorite } : chat,
-              ),
-            };
+              );
+            } else if ("chats" in updatedData) {
+              updatedData.chats = updatedData.chats.map((chat: ChatSummary) =>
+                chat.id === chatId ? { ...chat, favorite: isFavorite } : chat,
+              );
+            }
+            return updatedData;
           },
           rollbackOnError: true,
         },
@@ -168,22 +180,6 @@ export default function Command(props: { scopeId?: string }) {
     );
   }
 
-  const getChatIcon = (chat: ChatSummary) => {
-    if (chat.favorite) {
-      return { source: Icon.Star, tintColor: Color.Yellow };
-    }
-    if (chat.latestVersion?.status === "completed") {
-      return { source: Icon.CheckCircle, tintColor: Color.Green };
-    }
-    if (chat.latestVersion?.status === "pending") {
-      return { source: Icon.Clock, tintColor: Color.Orange };
-    }
-    if (chat.latestVersion?.status === "failed") {
-      return { source: Icon.XMarkCircle, tintColor: Color.Red };
-    }
-    return { source: Icon.Message, tintColor: Color.Blue };
-  };
-
   const getChatSubtitle = (chat: ChatSummary) => {
     if (chat.projectId) {
       const assignedProject = projects.find((project) => project.id === chat.projectId);
@@ -191,27 +187,27 @@ export default function Command(props: { scopeId?: string }) {
         return `Project: ${assignedProject.name}`;
       }
     }
-    if (chat.latestVersion?.status) {
-      return `Status: ${chat.latestVersion.status}`;
-    }
-    return "No recent activity";
+    return undefined;
   };
+
+  const chats = props.projectId ? (data as ProjectChatsResponse)?.chats || [] : (data as FindChatsResponse)?.data || [];
 
   return (
     <List
       navigationTitle="v0 Chats"
       searchBarPlaceholder="Search your chats..."
-      isShowingDetail={true}
       searchBarAccessory={
-        <ScopeDropdown
-          selectedScope={selectedScopeFilter}
-          onScopeChange={setSelectedScopeFilter}
-          availableScopes={scopesData || []}
-          isLoadingScopes={isLoadingScopes}
-        />
+        props.projectId ? null : (
+          <ScopeDropdown
+            selectedScope={selectedScopeFilter}
+            onScopeChange={setSelectedScopeFilter}
+            availableScopes={scopesData || []}
+            isLoadingScopes={isLoadingScopes}
+          />
+        )
       }
     >
-      {(data?.data || [])
+      {chats
         .sort((a, b) => {
           // Sort favorited chats to the top
           if (a.favorite && !b.favorite) return -1;
@@ -222,19 +218,21 @@ export default function Command(props: { scopeId?: string }) {
         .map((chat: ChatSummary) => (
           <List.Item
             key={chat.id}
-            icon={getChatIcon(chat)}
             title={chat.title || "Untitled Chat"}
             subtitle={getChatSubtitle(chat)}
             accessories={[
-              {
-                text: new Date(chat.updatedAt).toLocaleDateString(),
-                tooltip: "Last updated",
-              },
               ...(chat.favorite ? [{ icon: Icon.Star, tooltip: "Favorite" }] : []),
+              ...(chat.latestVersion ? [{ icon: Icon.Window, tooltip: "Has Preview" }] : []),
+              ...(chat.privacy === "private" ? [{ icon: Icon.Lock, tooltip: "Private" }] : []),
+              ...(chat.privacy === "public" ? [{ icon: Icon.Globe, tooltip: "Public" }] : []),
+              ...(chat.privacy === "team" ? [{ icon: Icon.TwoPeople, tooltip: "Team" }] : []),
+              ...(chat.privacy === "unlisted" ? [{ icon: Icon.EyeDisabled, tooltip: "Unlisted" }] : []),
+              ...(chat.privacy === "team-edit" ? [{ icon: Icon.CheckRosette, tooltip: "Team Edit" }] : []),
+              { date: new Date(chat.updatedAt), tooltip: "Last updated" },
             ]}
             actions={
               <ActionPanel>
-                <Action.Push title="Show Details" target={<ChatDetail chatId={chat.id} />} icon={Icon.Eye} />
+                <Action.Push title="View Messages" target={<ChatDetail chatId={chat.id} />} icon={Icon.Message} />
                 <Action.Push
                   title="Add Message"
                   target={<AddMessage chatId={chat.id} chatTitle={chat.title} revalidateChats={mutate} />}
@@ -283,6 +281,12 @@ export default function Command(props: { scopeId?: string }) {
                     icon={Icon.Globe}
                     shortcut={{ modifiers: ["cmd"], key: "b" }}
                   />
+                  <Action.Push
+                    title="View Metadata"
+                    icon={Icon.Tag}
+                    target={<ChatMetadataDetail chat={chat} />}
+                    shortcut={{ modifiers: ["cmd", "shift"], key: "m" }}
+                  />
                   <Action.CopyToClipboard
                     content={chat.id}
                     title="Copy Chat ID"
@@ -309,7 +313,6 @@ export default function Command(props: { scopeId?: string }) {
                 </ActionPanel.Section>
               </ActionPanel>
             }
-            detail={<ChatMessagesDetail chat={chat} />}
           />
         ))}
     </List>
