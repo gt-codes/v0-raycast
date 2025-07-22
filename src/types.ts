@@ -105,6 +105,21 @@ export interface ChatDetailResponse {
   }[];
 }
 
+export interface ChatMetadataResponse {
+  git?: {
+    branch?: string;
+    commit?: string;
+  };
+  deployment?: {
+    id?: string;
+  };
+  project?: {
+    id?: string;
+    name?: string;
+    url?: string;
+  };
+}
+
 export interface DeleteChatResponse {
   id: string;
   object: "chat";

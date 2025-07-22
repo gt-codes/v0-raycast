@@ -1,6 +1,6 @@
 import { List, Icon, Color, Detail, ActionPanel, Action } from "@raycast/api";
 import { useFetch } from "@raycast/utils";
-import type { ChatDetailResponse } from "../types";
+import type { ChatDetailResponse, ChatMetadataResponse } from "../types";
 import AddMessage from "./AddMessage";
 import { useActiveProfile } from "../hooks/useActiveProfile";
 import { useState } from "react";
@@ -21,14 +21,26 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
     },
   );
 
-  if (error) {
-    return <Detail markdown={`# Error\n\n${error.message}`} />;
+  const {
+    isLoading: isLoadingMetadata,
+    data: metadata,
+    error: metadataError,
+  } = useFetch<ChatMetadataResponse>(activeProfileApiKey ? `https://api.v0.dev/v1/chats/${chatId}/metadata` : "", {
+    headers: {
+      Authorization: `Bearer ${activeProfileApiKey}`,
+    },
+    parseResponse: (response) => response.json(),
+    execute: !!activeProfileApiKey && !isLoadingProfileDetails,
+  });
+
+  if (error || metadataError) {
+    return <Detail markdown={`# Error\n\n${error?.message || metadataError?.message}`} />;
   }
 
-  if (isLoading || isLoadingProfileDetails) {
+  if (isLoading || isLoadingProfileDetails || isLoadingMetadata) {
     return (
       <List navigationTitle="Chat Detail">
-        <List.EmptyView title="Loading..." description="Fetching chat messages..." />
+        <List.EmptyView title="Loading..." description="Fetching chat messages and metadata..." />
       </List>
     );
   }
@@ -45,13 +57,6 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
     return { source: Icon.Cog, tintColor: Color.SecondaryText };
   };
 
-  const getMessageTitle = (messageRole: string) => {
-    if (isUserMessage(messageRole)) {
-      return "You";
-    }
-    return "v0";
-  };
-
   const getMessagePreview = (content: string) => {
     // Truncate long messages for preview
     const maxLength = 100;
@@ -63,8 +68,11 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
   };
 
   const formatMessageContent = (content: string) => {
-    // Remove <Thinking>...</Thinking> tags
-    return content.replace(/<Thinking>[\s\S]*?<\/Thinking>/g, "").trim();
+    // Remove <Thinking>...</Thinking>, <CodeProject>...</CodeProject> and <Actions>...</Actions> tags
+    let formattedContent = content.replace(/<Thinking>[\s\S]*?<\/Thinking>/g, "");
+    formattedContent = formattedContent.replace(/<CodeProject[^>]*>[\s\S]*?<\/CodeProject>/g, "");
+    formattedContent = formattedContent.replace(/<Actions>[\s\S]*?<\/Actions>/g, "");
+    return formattedContent.trim();
   };
 
   return (
@@ -118,14 +126,30 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
                   title="View Full Message"
                   target={
                     <Detail
-                      markdown={`# ${getMessageTitle(message.role)}
-
-**Sent at:** ${new Date(message.createdAt).toLocaleString()}
-**Type:** ${message.type}
-
----
-
-${formatMessageContent(message.content)}`}
+                      markdown={formatMessageContent(message.content)}
+                      metadata={
+                        <Detail.Metadata>
+                          <Detail.Metadata.Label title="Sent at" text={new Date(message.createdAt).toLocaleString()} />
+                          <Detail.Metadata.Label title="From" text={`${message.role === "user" ? "You" : "v0"}`} />
+                          <Detail.Metadata.Label title="Type" text={message.type} />
+                          {metadata?.project?.name && (
+                            <Detail.Metadata.Link
+                              title="Project"
+                              text={metadata.project.name}
+                              target={metadata.project.url || ""}
+                            />
+                          )}
+                          {metadata?.git?.branch && (
+                            <Detail.Metadata.Label title="Git Branch" text={metadata.git.branch} />
+                          )}
+                          {metadata?.git?.commit && (
+                            <Detail.Metadata.Label title="Git Commit" text={metadata.git.commit} />
+                          )}
+                          {metadata?.deployment?.id && (
+                            <Detail.Metadata.Label title="Deployment ID" text={metadata.deployment.id} />
+                          )}
+                        </Detail.Metadata>
+                      }
                     />
                   }
                   icon={Icon.Eye}
