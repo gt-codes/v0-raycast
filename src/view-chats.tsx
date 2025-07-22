@@ -4,7 +4,6 @@ import ChatDetail from "./components/ChatDetail";
 import AddMessage from "./components/AddMessage";
 import { useNavigation } from "@raycast/api";
 import AssignProjectForm from "./components/AssignProjectForm";
-import { useProjects } from "./hooks/useProjects";
 import { useState, useEffect } from "react";
 import UpdateChatPrivacyForm from "./components/UpdateChatPrivacyForm";
 import { useActiveProfile } from "./hooks/useActiveProfile";
@@ -16,7 +15,6 @@ import ChatMetadataDetail from "./components/ChatMetadataDetail";
 
 export default function Command(props: { scopeId?: string; projectId?: string }) {
   const { push } = useNavigation();
-  const { projects } = useProjects();
   const { activeProfileApiKey, activeProfileDefaultScope, isLoadingProfileDetails } = useActiveProfile();
 
   const [selectedScopeFilter, setSelectedScopeFilter] = useState<string | null>(props.scopeId || null);
@@ -45,7 +43,9 @@ export default function Command(props: { scopeId?: string; projectId?: string })
     },
   );
 
-  const { scopes: scopesData, isLoadingScopes } = useScopes(activeProfileApiKey); // Use useScopes hook
+  const { scopes: scopesData, isLoadingScopes } = useScopes(activeProfileApiKey);
+
+  const chats = props.projectId ? (data as ProjectChatsResponse)?.chats || [] : (data as FindChatsResponse)?.data || [];
 
   const deleteChat = async (chatId: string, chatTitle: string) => {
     if (!activeProfileApiKey) {
@@ -180,18 +180,6 @@ export default function Command(props: { scopeId?: string; projectId?: string })
     );
   }
 
-  const getChatSubtitle = (chat: ChatSummary) => {
-    if (chat.projectId) {
-      const assignedProject = projects.find((project) => project.id === chat.projectId);
-      if (assignedProject) {
-        return `Project: ${assignedProject.name}`;
-      }
-    }
-    return undefined;
-  };
-
-  const chats = props.projectId ? (data as ProjectChatsResponse)?.chats || [] : (data as FindChatsResponse)?.data || [];
-
   return (
     <List
       navigationTitle="v0 Chats"
@@ -213,13 +201,13 @@ export default function Command(props: { scopeId?: string; projectId?: string })
           if (a.favorite && !b.favorite) return -1;
           if (!a.favorite && b.favorite) return 1;
           // Maintain original order for non-favorited chats, or sort by updatedAt for favorited chats
-          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+          return new Date(b.updatedAt || "").getTime() - new Date(a.updatedAt || "").getTime();
         })
         .map((chat: ChatSummary) => (
           <List.Item
             key={chat.id}
-            title={chat.title || "Untitled Chat"}
-            subtitle={getChatSubtitle(chat)}
+            title={chat.name || "Untitled Chat"}
+            subtitle={chat.url}
             accessories={[
               ...(chat.favorite ? [{ icon: Icon.Star, tooltip: "Favorite" }] : []),
               ...(chat.latestVersion ? [{ icon: Icon.Window, tooltip: "Has Preview" }] : []),
@@ -228,14 +216,14 @@ export default function Command(props: { scopeId?: string; projectId?: string })
               ...(chat.privacy === "team" ? [{ icon: Icon.TwoPeople, tooltip: "Team" }] : []),
               ...(chat.privacy === "unlisted" ? [{ icon: Icon.EyeDisabled, tooltip: "Unlisted" }] : []),
               ...(chat.privacy === "team-edit" ? [{ icon: Icon.CheckRosette, tooltip: "Team Edit" }] : []),
-              { date: new Date(chat.updatedAt), tooltip: "Last updated" },
+              { date: new Date(chat.updatedAt || ""), tooltip: "Last updated" },
             ]}
             actions={
               <ActionPanel>
                 <Action.Push title="View Messages" target={<ChatDetail chatId={chat.id} />} icon={Icon.Message} />
                 <Action.Push
                   title="Add Message"
-                  target={<AddMessage chatId={chat.id} chatTitle={chat.title} revalidateChats={mutate} />}
+                  target={<AddMessage chatId={chat.id} chatTitle={chat.name} revalidateChats={mutate} />}
                   icon={Icon.Plus}
                   shortcut={{ modifiers: ["cmd"], key: "n" }}
                 />
@@ -259,18 +247,12 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                   target={<AssignProjectForm chat={chat} revalidateChats={mutate} />}
                   shortcut={{ modifiers: ["cmd", "shift"], key: "a" }}
                 />
-                {chat.projectId && (
-                  <Action.CopyToClipboard title="Copy Project ID" content={chat.projectId} icon={Icon.Clipboard} />
-                )}
+                {/* projectId no longer exists on ChatSummary */}
                 <Action.Push
                   title="Update Chat Privacy"
                   icon={Icon.Lock}
                   target={
-                    <UpdateChatPrivacyForm
-                      chatId={chat.id}
-                      currentPrivacy={chat.privacy as "public" | "private" | "team" | "team-edit" | "unlisted"}
-                      revalidateChats={mutate}
-                    />
+                    <UpdateChatPrivacyForm chatId={chat.id} currentPrivacy={chat.privacy} revalidateChats={mutate} />
                   }
                   shortcut={{ modifiers: ["cmd", "shift"], key: "p" }}
                 />
@@ -285,13 +267,13 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                     title="View Metadata"
                     icon={Icon.Tag}
                     target={<ChatMetadataDetail chat={chat} />}
-                    shortcut={{ modifiers: ["cmd", "shift"], key: "m" }}
+                    shortcut={{ modifiers: ["cmd"], key: "m" }}
                   />
                   <Action.CopyToClipboard
                     content={chat.id}
                     title="Copy Chat ID"
                     icon={Icon.CopyClipboard}
-                    shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+                    shortcut={{ modifiers: ["cmd"], key: "c" }}
                   />
                   <Action
                     title="Delete Chat"
@@ -300,15 +282,15 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                     onAction={async () => {
                       if (
                         await confirmAlert({
-                          title: `Delete "${chat.title || "Untitled Chat"}"?`,
+                          title: `Delete "${chat.name || "Untitled Chat"}"?`,
                           message:
                             "The chat will be deleted and removed from your chat history. This action cannot be undone.",
                         })
                       ) {
-                        deleteChat(chat.id, chat.title || "Untitled Chat");
+                        deleteChat(chat.id, chat.name || "Untitled Chat");
                       }
                     }}
-                    shortcut={{ modifiers: ["cmd", "shift"], key: "d" }}
+                    shortcut={{ modifiers: ["cmd"], key: "d" }}
                   />
                 </ActionPanel.Section>
               </ActionPanel>

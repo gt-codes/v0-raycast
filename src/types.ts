@@ -6,21 +6,63 @@ export interface FindChatsResponse {
 export interface ChatSummary {
   id: string;
   object: "chat";
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  favorite: boolean;
   shareable: boolean;
-  privacy: string;
+  privacy: "public" | "private" | "team" | "team-edit" | "unlisted";
+  name?: string;
+  /**
+   * @deprecated
+   */
+  title?: string;
+  updatedAt?: string;
+  favorite: boolean;
   authorId: string;
-  latestVersion?: {
-    id: string;
-    object: "chat_version";
-    status: "pending" | "completed" | "failed";
-  };
-  projectId?: string;
-  projectName?: string;
-  scopeId?: string;
+  latestVersion?: VersionDetail;
+  url: string;
+  messages: MessageSummary[];
+  files?: {
+    lang: string;
+    meta: {
+      [k: string]: string;
+    };
+    source: string;
+  }[];
+  demo?: string;
+  text: string;
+}
+
+export interface VersionDetail {
+  id: string;
+  object: "version";
+  status: "pending" | "completed" | "failed";
+  files: {
+    object: "file";
+    name: string;
+    content: string;
+  }[];
+}
+
+export interface MessageSummary {
+  id: string;
+  object: "message";
+  content: string;
+  createdAt: string;
+  type:
+    | "message"
+    | "forked-block"
+    | "forked-chat"
+    | "open-in-v0"
+    | "refinement"
+    | "added-environment-variables"
+    | "added-integration"
+    | "deleted-file"
+    | "moved-file"
+    | "renamed-file"
+    | "edited-file"
+    | "replace-src"
+    | "reverted-block"
+    | "fix-with-v0"
+    | "sync-git";
+  role: "user" | "assistant";
 }
 
 export interface ChatDetailResponse {
@@ -59,6 +101,7 @@ export interface ChatDetailResponse {
       | "reverted-block"
       | "fix-with-v0"
       | "sync-git";
+    role: "user" | "assistant";
   }[];
 }
 
@@ -104,6 +147,7 @@ export interface ForkChatResponse {
       | "reverted-block"
       | "fix-with-v0"
       | "sync-git";
+    role: "user" | "assistant";
   }[];
 }
 
