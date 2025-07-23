@@ -203,11 +203,10 @@ export default function Command(props: { scopeId?: string; projectId?: string })
           // Maintain original order for non-favorited chats, or sort by updatedAt for favorited chats
           return new Date(b.updatedAt || "").getTime() - new Date(a.updatedAt || "").getTime();
         })
-        .map((chat: ChatSummary) => (
+        .map((chat) => (
           <List.Item
             key={chat.id}
             title={chat.name || "Untitled Chat"}
-            subtitle={chat.url}
             accessories={[
               ...(chat.favorite ? [{ icon: Icon.Star, tooltip: "Favorite" }] : []),
               ...(chat.latestVersion ? [{ icon: Icon.Window, tooltip: "Has Preview" }] : []),
@@ -256,6 +255,7 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                   }
                   shortcut={{ modifiers: ["cmd", "shift"], key: "p" }}
                 />
+                {/* Remove View Demo action from here, as it's not available on ChatSummary */}
                 <ActionPanel.Section>
                   <Action.OpenInBrowser
                     url={`https://v0.dev/chat/${chat.id}`}
@@ -282,12 +282,12 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                     onAction={async () => {
                       if (
                         await confirmAlert({
-                          title: `Delete "${chat.name || "Untitled Chat"}"?`,
+                          title: `Delete "${chat.name || chat.title || "Untitled Chat"}"?`,
                           message:
                             "The chat will be deleted and removed from your chat history. This action cannot be undone.",
                         })
                       ) {
-                        deleteChat(chat.id, chat.name || "Untitled Chat");
+                        deleteChat(chat.id, chat.name || chat.title || "Untitled Chat");
                       }
                     }}
                     shortcut={{ modifiers: ["cmd"], key: "d" }}

@@ -16,18 +16,12 @@ export interface ChatSummary {
   updatedAt?: string;
   favorite: boolean;
   authorId: string;
-  latestVersion?: VersionDetail;
-  url: string;
-  messages: MessageSummary[];
-  files?: {
-    lang: string;
-    meta: {
-      [k: string]: string;
-    };
-    source: string;
-  }[];
-  demo?: string;
-  text: string;
+  projectId?: string;
+  latestVersion?: {
+    id: string;
+    object: "version";
+    status: "pending" | "completed" | "failed";
+  };
 }
 
 export interface VersionDetail {

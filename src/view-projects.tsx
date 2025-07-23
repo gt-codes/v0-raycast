@@ -51,10 +51,15 @@ export default function ViewProjectsCommand() {
           key={project.id}
           icon={Icon.Tag}
           title={project.name}
-          accessories={[{ text: `ID: ${project.id}` }]}
           actions={
             <ActionPanel>
               <Action.Push title="View Chats" icon={Icon.Message} target={<ProjectChats projectId={project.id} />} />
+              <Action.CopyToClipboard
+                title="Copy Project ID"
+                content={project.id}
+                icon={Icon.Clipboard}
+                shortcut={{ modifiers: ["cmd"], key: "c" }}
+              />
             </ActionPanel>
           }
         />
