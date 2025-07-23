@@ -54,6 +54,12 @@ export default function ViewProjectsCommand() {
           actions={
             <ActionPanel>
               <Action.Push title="View Chats" icon={Icon.Message} target={<ProjectChats projectId={project.id} />} />
+              <Action.OpenInBrowser
+                icon={Icon.Globe}
+                title="View in Browser"
+                shortcut={{ modifiers: ["cmd"], key: "b" }}
+                url={`https://v0.dev/chat/projects/${project.id}`}
+              />
               <Action.CopyToClipboard
                 title="Copy Project ID"
                 content={project.id}
