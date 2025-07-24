@@ -20,6 +20,7 @@ export interface ChatSummary {
   latestVersion?: {
     id: string;
     object: "version";
+    demoUrl?: string;
     status: "pending" | "completed" | "failed";
   };
 }
@@ -28,6 +29,7 @@ export interface VersionDetail {
   id: string;
   object: "version";
   status: "pending" | "completed" | "failed";
+  demoUrl?: string;
   files: {
     object: "file";
     name: string;
@@ -55,6 +57,7 @@ export interface MessageSummary {
     | "replace-src"
     | "reverted-block"
     | "fix-with-v0"
+    | "auto-fix-with-v0"
     | "sync-git";
   role: "user" | "assistant";
 }
@@ -62,41 +65,32 @@ export interface MessageSummary {
 export interface ChatDetailResponse {
   id: string;
   object: "chat";
-  url: string;
-  demo?: string;
   shareable: boolean;
-  privacy?: "public" | "private" | "team" | "team-edit" | "unlisted";
+  privacy: "public" | "private" | "team" | "team-edit" | "unlisted";
+  name?: string;
+  /**
+   * @deprecated
+   */
   title?: string;
   updatedAt?: string;
   favorite: boolean;
   authorId: string;
-  latestVersion?: {
-    id: string;
-    status: "pending" | "completed" | "failed";
-  };
-  messages: {
-    id: string;
-    object: "message";
-    content: string;
-    createdAt: string;
-    type:
-      | "message"
-      | "forked-block"
-      | "forked-chat"
-      | "open-in-v0"
-      | "refinement"
-      | "added-environment-variables"
-      | "added-integration"
-      | "deleted-file"
-      | "moved-file"
-      | "renamed-file"
-      | "edited-file"
-      | "replace-src"
-      | "reverted-block"
-      | "fix-with-v0"
-      | "sync-git";
-    role: "user" | "assistant";
+  projectId?: string;
+  latestVersion?: VersionDetail;
+  url: string;
+  messages: MessageSummary[];
+  files?: {
+    lang: string;
+    meta: {
+      [k: string]: string;
+    };
+    source: string;
   }[];
+  /**
+   * @deprecated
+   */
+  demo?: string;
+  text: string;
 }
 
 export interface ChatMetadataResponse {

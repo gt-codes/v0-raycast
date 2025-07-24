@@ -220,7 +220,7 @@ export default function Command(props: { scopeId?: string; projectId?: string })
             }
             accessories={[
               ...(chat.favorite ? [{ icon: Icon.Star, tooltip: "Favorite" }] : []),
-              ...(chat.latestVersion ? [{ icon: Icon.Window, tooltip: "Has Preview" }] : []),
+              ...(chat.latestVersion?.demoUrl ? [{ icon: Icon.Window, tooltip: "Has Preview" }] : []),
               ...(chat.privacy === "private" ? [{ icon: Icon.Lock, tooltip: "Private" }] : []),
               ...(chat.privacy === "public" ? [{ icon: Icon.Globe, tooltip: "Public" }] : []),
               ...(chat.privacy === "team" ? [{ icon: Icon.TwoPeople, tooltip: "Team" }] : []),
@@ -276,9 +276,17 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                   )}
                 </ActionPanel.Section>
                 <ActionPanel.Section>
+                  {chat.latestVersion?.demoUrl && (
+                    <Action.OpenInBrowser
+                      url={chat.latestVersion.demoUrl}
+                      title="View Demo"
+                      icon={Icon.Window}
+                      shortcut={{ modifiers: ["cmd"], key: "i" }}
+                    />
+                  )}
                   <Action.OpenInBrowser
                     url={`https://v0.dev/chat/${chat.id}`}
-                    title="View in Browser"
+                    title="View Chat in Browser"
                     icon={Icon.Globe}
                     shortcut={{ modifiers: ["cmd"], key: "b" }}
                   />
