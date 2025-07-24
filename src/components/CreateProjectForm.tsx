@@ -3,6 +3,7 @@ import { useNavigation } from "@raycast/api";
 import type { CreateProjectResponse } from "../types";
 import { useActiveProfile } from "../hooks/useActiveProfile";
 import { useForm, FormValidation } from "@raycast/utils"; // Import useForm and FormValidation
+import { v0ApiFetcher, V0ApiError } from "../lib/v0-api-utils";
 
 interface CreateProjectFormProps {
   onProjectCreated: (projectId: string) => void;
@@ -15,7 +16,7 @@ interface CreateProjectFormValues {
 
 export default function CreateProjectForm({ onProjectCreated }: CreateProjectFormProps) {
   const { pop } = useNavigation();
-  const { activeProfileApiKey, isLoadingProfileDetails } = useActiveProfile();
+  const { activeProfileApiKey, isLoadingProfileDetails, activeProfileDefaultScope } = useActiveProfile();
 
   const { handleSubmit, itemProps } = useForm<CreateProjectFormValues>({
     onSubmit: async (values) => {
@@ -30,24 +31,16 @@ export default function CreateProjectForm({ onProjectCreated }: CreateProjectFor
       });
 
       try {
-        const response = await fetch("https://api.v0.dev/v1/projects", {
+        const newProject = await v0ApiFetcher<CreateProjectResponse>("https://api.v0.dev/v1/projects", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${activeProfileApiKey}`,
             "Content-Type": "application/json",
+            "x-scope": activeProfileDefaultScope || "",
           },
-          body: JSON.stringify({
-            name: values.name,
-            description: values.description,
-          }),
+          body: { name: values.name, description: values.description },
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`Failed to create project: ${errorData.error?.message || response.statusText}`);
-        }
-
-        const newProject: CreateProjectResponse = await response.json();
         toast.style = Toast.Style.Success;
         toast.title = "Project Created";
         toast.message = `Project "${newProject.name}" created successfully.`;
@@ -56,7 +49,11 @@ export default function CreateProjectForm({ onProjectCreated }: CreateProjectFor
       } catch (error) {
         toast.style = Toast.Style.Failure;
         toast.title = "Creation Failed";
-        toast.message = error instanceof Error ? error.message : "Failed to create project";
+        if (error instanceof V0ApiError) {
+          toast.message = error.message;
+        } else {
+          toast.message = `Failed to create project: ${error instanceof Error ? error.message : String(error)}`;
+        }
       }
     },
     validation: {

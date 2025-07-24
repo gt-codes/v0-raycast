@@ -1,6 +1,7 @@
 import { ActionPanel, Form, Action, showToast, Toast, useNavigation } from "@raycast/api";
 import { useForm } from "@raycast/utils";
 import { useActiveProfile } from "../hooks/useActiveProfile";
+import { v0ApiFetcher, V0ApiError } from "../lib/v0-api-utils";
 
 interface UpdateChatPrivacyFormProps {
   chatId: string;
@@ -14,7 +15,7 @@ interface FormValues {
 
 export default function UpdateChatPrivacyForm({ chatId, currentPrivacy, revalidateChats }: UpdateChatPrivacyFormProps) {
   const { pop } = useNavigation();
-  const { activeProfileApiKey, isLoadingProfileDetails } = useActiveProfile();
+  const { activeProfileApiKey, isLoadingProfileDetails, activeProfileDefaultScope } = useActiveProfile();
 
   const { handleSubmit, itemProps } = useForm<FormValues>({
     onSubmit: async (values) => {
@@ -29,21 +30,15 @@ export default function UpdateChatPrivacyForm({ chatId, currentPrivacy, revalida
       });
 
       try {
-        const response = await fetch(`https://api.v0.dev/v1/chats/${chatId}`, {
+        await v0ApiFetcher(`https://api.v0.dev/v1/chats/${chatId}`, {
           method: "PATCH",
           headers: {
             Authorization: `Bearer ${activeProfileApiKey}`,
             "Content-Type": "application/json",
+            "x-scope": activeProfileDefaultScope || "",
           },
-          body: JSON.stringify({ privacy: values.privacy }),
+          body: { privacy: values.privacy },
         });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`Failed to update chat privacy: ${errorData.error?.message || response.statusText}`);
-        }
-
-        await response.json();
 
         toast.style = Toast.Style.Success;
         toast.title = "Privacy Updated";
@@ -54,7 +49,12 @@ export default function UpdateChatPrivacyForm({ chatId, currentPrivacy, revalida
       } catch (error) {
         toast.style = Toast.Style.Failure;
         toast.title = "Update Failed";
-        toast.message = error instanceof Error ? error.message : "Failed to update chat privacy";
+        if (error instanceof V0ApiError) {
+          toast.message = error.message;
+        } else {
+          toast.message = `Failed to update chat privacy: ${error instanceof Error ? error.message : String(error)}`;
+        }
+        throw error;
       }
     },
     validation: {

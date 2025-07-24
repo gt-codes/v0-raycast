@@ -1,10 +1,11 @@
-import { ActionPanel, Form, Action, showToast, Toast, Icon } from "@raycast/api";
+import { ActionPanel, Form, Action, showToast, Toast, Icon, List } from "@raycast/api";
 import { useNavigation } from "@raycast/api";
 import { useProjects } from "../hooks/useProjects";
 import { useState, useEffect } from "react";
 import type { ChatSummary, Response as AssignProjectResponse } from "../types";
 import CreateProjectForm from "./CreateProjectForm";
 import { useActiveProfile } from "../hooks/useActiveProfile";
+import { v0ApiFetcher, V0ApiError } from "../lib/v0-api-utils";
 
 interface AssignProjectFormProps {
   chat: ChatSummary;
@@ -13,15 +14,24 @@ interface AssignProjectFormProps {
 
 export default function AssignProjectForm({ chat, revalidateChats }: AssignProjectFormProps) {
   const { pop } = useNavigation();
-  // Pass the chat's scopeId to useProjects to filter projects by the current chat's scope
-  const { projects, isLoadingProjects, projectError, revalidateProjects } = useProjects(chat.scopeId);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(chat.projectId || "");
+  const { activeProfileApiKey, isLoadingProfileDetails, activeProfileDefaultScope } = useActiveProfile();
 
-  const { activeProfileApiKey, isLoadingProfileDetails } = useActiveProfile();
+  const { projects, isLoadingProjects, projectError, revalidateProjects } = useProjects(activeProfileDefaultScope);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   useEffect(() => {
-    setSelectedProjectId(chat.projectId || "");
-  }, [chat.projectId]);
+    // Only update selectedProjectId after projects and profile details have loaded
+    if (!isLoadingProjects && !isLoadingProfileDetails && projects) {
+      if (chat.projectId && projects.some((p) => p.id === chat.projectId)) {
+        setSelectedProjectId(chat.projectId);
+      } else if (projects.length > 0) {
+        setSelectedProjectId(projects[0].id);
+      } else {
+        // If no projects are found after loading, clear selected project
+        setSelectedProjectId(null);
+      }
+    }
+  }, [chat.projectId, projects, isLoadingProjects, isLoadingProfileDetails]);
 
   const assignProject = async (projectIdToAssign: string) => {
     if (!activeProfileApiKey) {
@@ -34,21 +44,18 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
     });
 
     try {
-      const response = await fetch(`https://api.v0.dev/v1/projects/${projectIdToAssign}/assign`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${activeProfileApiKey}`,
-          "Content-Type": "application/json",
+      const result = await v0ApiFetcher<AssignProjectResponse>(
+        `https://api.v0.dev/v1/projects/${projectIdToAssign}/assign`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${activeProfileApiKey}`,
+            "x-scope": activeProfileDefaultScope || "",
+            "Content-Type": "application/json",
+          },
+          body: { chatId: chat.id },
         },
-        body: JSON.stringify({ chatId: chat.id }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to assign project: ${errorData.error?.message || response.statusText}`);
-      }
-
-      const result: AssignProjectResponse = await response.json();
+      );
 
       if (result.assigned) {
         toast.style = Toast.Style.Success;
@@ -62,7 +69,11 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
     } catch (error) {
       toast.style = Toast.Style.Failure;
       toast.title = "Assignment Failed";
-      toast.message = error instanceof Error ? error.message : "Failed to assign project";
+      if (error instanceof V0ApiError) {
+        toast.message = error.message;
+      } else {
+        toast.message = `Failed to assign project: ${error instanceof Error ? error.message : String(error)}`;
+      }
     }
   };
 
@@ -77,6 +88,7 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
   const handleNewProjectCreated = (newProjectId: string) => {
     revalidateProjects(); // Refresh the list of projects
     assignProject(newProjectId); // Automatically assign the new project to the chat
+    pop(); // Go back to the AssignProjectForm after creation and assignment
   };
 
   if (projectError) {
@@ -87,9 +99,22 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
     );
   }
 
+  if (isLoadingProjects || isLoadingProfileDetails) {
+    return (
+      <List navigationTitle="Assign Project">
+        <List.EmptyView title="Loading projects..." description="Fetching available projects..." />
+      </List>
+    );
+  }
+
+  // If no projects are loaded after fetching, directly push to CreateProjectForm
+  if (projects.length === 0 && !isLoadingProjects && !isLoadingProfileDetails) {
+    showToast(Toast.Style.Failure, "No projects found. Please create a new project to assign to this chat.");
+    return <CreateProjectForm onProjectCreated={handleNewProjectCreated} />;
+  }
+
   return (
     <Form
-      isLoading={isLoadingProjects || isLoadingProfileDetails}
       actions={
         <ActionPanel>
           <Action.SubmitForm title="Assign Selected Project" onSubmit={handleSubmit} icon={Icon.Tag} />
@@ -105,15 +130,13 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
       <Form.Dropdown
         id="projectId"
         title="Select Project"
-        value={selectedProjectId}
+        value={selectedProjectId || ""}
         onChange={setSelectedProjectId}
         isLoading={isLoadingProjects}
       >
-        {projects.length === 0 && !isLoadingProjects ? (
-          <Form.Dropdown.Item value="no-projects" title="No projects found" />
-        ) : (
-          projects.map((project) => <Form.Dropdown.Item key={project.id} value={project.id} title={project.name} />)
-        )}
+        {projects.map((project) => (
+          <Form.Dropdown.Item key={project.id} value={project.id} title={project.name} />
+        ))}
       </Form.Dropdown>
     </Form>
   );

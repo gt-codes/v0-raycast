@@ -5,6 +5,7 @@ import ViewChats from "./view-chats";
 import { useProjects } from "./hooks/useProjects";
 import { useActiveProfile } from "./hooks/useActiveProfile";
 import { useScopes } from "./hooks/useScopes";
+import { v0ApiFetcher, V0ApiError } from "./lib/v0-api-utils";
 
 interface FormValues {
   message: string;
@@ -55,7 +56,7 @@ export default function Command() {
           delete requestBody.modelConfiguration;
         }
 
-        const response = await fetch("https://api.v0.dev/v1/chats", {
+        await v0ApiFetcher<CreateChatRequest>("https://api.v0.dev/v1/chats", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${activeProfileApiKey}`,
@@ -64,12 +65,6 @@ export default function Command() {
           },
           body: JSON.stringify(requestBody),
         });
-
-        if (!response.ok) {
-          throw new Error(`Failed to create chat: ${response.statusText}`);
-        }
-
-        await response.json();
 
         toast.style = Toast.Style.Success;
         toast.title = "Chat Created";
@@ -82,7 +77,11 @@ export default function Command() {
       } catch (error) {
         toast.style = Toast.Style.Failure;
         toast.title = "Create Failed";
-        toast.message = error instanceof Error ? error.message : "Failed to create chat";
+        if (error instanceof V0ApiError) {
+          toast.message = error.message;
+        } else {
+          toast.message = `Failed to create chat: ${error instanceof Error ? error.message : String(error)}`;
+        }
         throw error;
       }
     },

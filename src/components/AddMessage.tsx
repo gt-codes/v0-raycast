@@ -3,6 +3,7 @@ import { useForm } from "@raycast/utils";
 import type { CreateMessageRequest } from "../types";
 import ChatDetail from "./ChatDetail";
 import { useActiveProfile } from "../hooks/useActiveProfile";
+import { v0ApiFetcher, V0ApiError } from "../lib/v0-api-utils";
 
 interface FormValues {
   message: string;
@@ -19,7 +20,7 @@ interface AddMessageProps {
 
 export default function AddMessage({ chatId, chatTitle, revalidateChats }: AddMessageProps) {
   const { push } = useNavigation();
-  const { activeProfileApiKey, isLoadingProfileDetails } = useActiveProfile();
+  const { activeProfileApiKey, isLoadingProfileDetails, activeProfileDefaultScope } = useActiveProfile();
 
   const { handleSubmit, itemProps } = useForm<FormValues>({
     onSubmit: async (values) => {
@@ -48,20 +49,15 @@ export default function AddMessage({ chatId, chatTitle, revalidateChats }: AddMe
           delete requestBody.modelConfiguration;
         }
 
-        const response = await fetch(`https://api.v0.dev/v1/chats/${chatId}/messages`, {
+        await v0ApiFetcher<CreateMessageRequest>(`https://api.v0.dev/v1/chats/${chatId}/messages`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${activeProfileApiKey}`,
             "Content-Type": "application/json",
+            "x-scope": activeProfileDefaultScope || "",
           },
           body: JSON.stringify(requestBody),
         });
-
-        if (!response.ok) {
-          throw new Error(`Failed to send message: ${response.statusText}`);
-        }
-
-        await response.json();
 
         toast.style = Toast.Style.Success;
         toast.title = "Message Sent";
@@ -76,7 +72,11 @@ export default function AddMessage({ chatId, chatTitle, revalidateChats }: AddMe
       } catch (error) {
         toast.style = Toast.Style.Failure;
         toast.title = "Send Failed";
-        toast.message = error instanceof Error ? error.message : "Failed to send message";
+        if (error instanceof V0ApiError) {
+          toast.message = error.message;
+        } else {
+          toast.message = `Failed to send message: ${error instanceof Error ? error.message : String(error)}`;
+        }
         throw error;
       }
     },

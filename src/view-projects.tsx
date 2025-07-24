@@ -5,6 +5,7 @@ import { ScopeDropdown } from "./components/ScopeDropdown";
 import { useActiveProfile } from "./hooks/useActiveProfile";
 import { useScopes } from "./hooks/useScopes";
 import ProjectChats from "./view-projects-chats";
+import CreateProjectForm from "./components/CreateProjectForm";
 
 export default function ViewProjectsCommand() {
   const { activeProfileApiKey, activeProfileDefaultScope, isLoadingProfileDetails } = useActiveProfile();
@@ -17,7 +18,7 @@ export default function ViewProjectsCommand() {
     }
   }, [activeProfileDefaultScope, selectedScope, isLoadingProfileDetails]);
 
-  const { projects, isLoadingProjects, projectError } = useProjects(selectedScope);
+  const { projects, isLoadingProjects, projectError, revalidateProjects } = useProjects(selectedScope);
 
   const { scopes: scopesData, isLoadingScopes } = useScopes(activeProfileApiKey); // Use useScopes hook
 
@@ -49,7 +50,7 @@ export default function ViewProjectsCommand() {
       {projects.map((project) => (
         <List.Item
           key={project.id}
-          icon={Icon.Tag}
+          icon={Icon.Folder}
           title={project.name}
           actions={
             <ActionPanel>
@@ -65,6 +66,12 @@ export default function ViewProjectsCommand() {
                 content={project.id}
                 icon={Icon.Clipboard}
                 shortcut={{ modifiers: ["cmd"], key: "c" }}
+              />
+              <Action.Push
+                title="Create New Project"
+                icon={Icon.NewFolder}
+                target={<CreateProjectForm onProjectCreated={revalidateProjects} />}
+                shortcut={{ modifiers: ["cmd"], key: "n" }}
               />
             </ActionPanel>
           }

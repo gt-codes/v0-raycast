@@ -4,7 +4,7 @@ import ChatDetail from "./components/ChatDetail";
 import AddMessage from "./components/AddMessage";
 import { useNavigation } from "@raycast/api";
 import AssignProjectForm from "./components/AssignProjectForm";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import UpdateChatPrivacyForm from "./components/UpdateChatPrivacyForm";
 import { useActiveProfile } from "./hooks/useActiveProfile";
 import { useScopes } from "./hooks/useScopes";
@@ -20,6 +20,14 @@ export default function Command(props: { scopeId?: string; projectId?: string })
   const { projects } = useProjects();
 
   const [selectedScopeFilter, setSelectedScopeFilter] = useState<string | null>(props.scopeId || null);
+
+  const getProjectName = useCallback(
+    (projectId: string) => {
+      const project = projects.find((p) => p.id === projectId);
+      return project?.name || undefined;
+    },
+    [projects],
+  );
 
   useEffect(() => {
     // Update selectedScopeFilter when defaultScope becomes available or props.scopeId changes
@@ -213,11 +221,7 @@ export default function Command(props: { scopeId?: string; projectId?: string })
           <List.Item
             key={chat.id}
             title={chat.name || "Untitled Chat"}
-            subtitle={
-              chat.projectId
-                ? projects.find((project) => project.id === chat.projectId)?.name || "Unknown Project"
-                : undefined
-            }
+            subtitle={chat.projectId ? getProjectName(chat.projectId) : undefined}
             accessories={[
               ...(chat.favorite ? [{ icon: Icon.Star, tooltip: "Favorite" }] : []),
               ...(chat.latestVersion?.demoUrl ? [{ icon: Icon.Window, tooltip: "Has Preview" }] : []),
@@ -302,6 +306,14 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                     icon={Icon.CopyClipboard}
                     shortcut={{ modifiers: ["cmd"], key: "c" }}
                   />
+                  {chat.projectId && !!getProjectName(chat.projectId) && (
+                    <Action.CopyToClipboard
+                      content={chat.projectId || ""}
+                      title="Copy Project ID"
+                      icon={Icon.CopyClipboard}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+                    />
+                  )}
                   <Action
                     title="Delete Chat"
                     icon={Icon.Trash}
