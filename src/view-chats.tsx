@@ -12,10 +12,12 @@ import { ScopeDropdown } from "./components/ScopeDropdown";
 import { useV0Api } from "./hooks/useV0Api";
 import { v0ApiFetcher, V0ApiError } from "./lib/v0-api-utils";
 import ChatMetadataDetail from "./components/ChatMetadataDetail";
+import { useProjects } from "./hooks/useProjects";
 
 export default function Command(props: { scopeId?: string; projectId?: string }) {
   const { push } = useNavigation();
   const { activeProfileApiKey, activeProfileDefaultScope, isLoadingProfileDetails } = useActiveProfile();
+  const { projects } = useProjects();
 
   const [selectedScopeFilter, setSelectedScopeFilter] = useState<string | null>(props.scopeId || null);
 
@@ -180,10 +182,14 @@ export default function Command(props: { scopeId?: string; projectId?: string })
     );
   }
 
+  const project = props.projectId ? projects.find((p) => p.id === props.projectId) : undefined;
+
   return (
     <List
       navigationTitle="v0 Chats"
-      searchBarPlaceholder="Search your chats..."
+      searchBarPlaceholder={
+        props.projectId ? `Search chats in "${project?.name || "Unknown Project"}"...` : "Search your chats..."
+      }
       searchBarAccessory={
         props.projectId ? null : (
           <ScopeDropdown
@@ -207,6 +213,11 @@ export default function Command(props: { scopeId?: string; projectId?: string })
           <List.Item
             key={chat.id}
             title={chat.name || "Untitled Chat"}
+            subtitle={
+              chat.projectId
+                ? projects.find((project) => project.id === chat.projectId)?.name || "Unknown Project"
+                : undefined
+            }
             accessories={[
               ...(chat.favorite ? [{ icon: Icon.Star, tooltip: "Favorite" }] : []),
               ...(chat.latestVersion ? [{ icon: Icon.Window, tooltip: "Has Preview" }] : []),
@@ -241,13 +252,6 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                   shortcut={{ modifiers: ["cmd", "shift"], key: "f" }}
                 />
                 <Action.Push
-                  title="Assign Project"
-                  icon={Icon.Tag}
-                  target={<AssignProjectForm chat={chat} revalidateChats={mutate} />}
-                  shortcut={{ modifiers: ["cmd", "shift"], key: "a" }}
-                />
-                {/* projectId no longer exists on ChatSummary */}
-                <Action.Push
                   title="Update Chat Privacy"
                   icon={Icon.Lock}
                   target={
@@ -255,7 +259,22 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                   }
                   shortcut={{ modifiers: ["cmd", "shift"], key: "p" }}
                 />
-                {/* Remove View Demo action from here, as it's not available on ChatSummary */}
+                <ActionPanel.Section>
+                  <Action.Push
+                    title="Assign Project"
+                    icon={Icon.Folder}
+                    target={<AssignProjectForm chat={chat} revalidateChats={mutate} />}
+                    shortcut={{ modifiers: ["cmd", "shift"], key: "a" }}
+                  />
+                  {chat.projectId && (
+                    <Action.Push
+                      title="Show All Project Chats"
+                      icon={Icon.Bubble}
+                      target={<Command projectId={chat.projectId} />}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "p" }}
+                    />
+                  )}
+                </ActionPanel.Section>
                 <ActionPanel.Section>
                   <Action.OpenInBrowser
                     url={`https://v0.dev/chat/${chat.id}`}

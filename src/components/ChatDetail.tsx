@@ -154,6 +154,14 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
                   }
                   icon={Icon.Eye}
                 />
+                {data?.demo && (
+                  <Action.OpenInBrowser
+                    title="View Demo"
+                    url={data.demo}
+                    icon={Icon.Play}
+                    shortcut={{ modifiers: ["cmd"], key: "d" }}
+                  />
+                )}
               </ActionPanel>
             }
           />
