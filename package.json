@@ -58,8 +58,7 @@
   "dependencies": {
     "@raycast/api": "^1.100.3",
     "@raycast/utils": "^1.17.0",
-    "uuid": "^11.1.0",
-    "v0-sdk": "^0.0.12"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@raycast/eslint-config": "^2.0.4",

@@ -17,9 +17,6 @@ importers:
       uuid:
         specifier: ^11.1.0
         version: 11.1.0
-      v0-sdk:
-        specifier: ^0.0.12
-        version: 0.0.12
     devDependencies:
       '@raycast/eslint-config':
         specifier: ^2.0.4
@@ -1059,9 +1056,6 @@ packages:
     resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
     hasBin: true
 
-  v0-sdk@0.0.12:
-    resolution: {integrity: sha512-6ixBBsM5WZxepIizcwIAgh6HDx3CD0wH56TunmAgpSrb9vDkLE+0ffkpLqoD+xxYSh6S7Xx+59KPyERudBg2QQ==}
-
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
 
@@ -2067,8 +2061,6 @@ snapshots:
       punycode: 2.3.1
 
   uuid@11.1.0: {}
-
-  v0-sdk@0.0.12: {}
 
   webidl-conversions@3.0.1: {}
 

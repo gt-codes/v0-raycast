@@ -40,7 +40,7 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
   if (isLoading || isLoadingProfileDetails || isLoadingMetadata) {
     return (
       <List navigationTitle="Chat Detail">
-        <List.EmptyView title="Loading..." description="Fetching chat messages and metadata..." />
+        <List.EmptyView title="Loading..." description="Fetching chat messages..." />
       </List>
     );
   }
@@ -68,10 +68,20 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
   };
 
   const formatMessageContent = (content: string) => {
-    // Remove <Thinking>...</Thinking>, <CodeProject>...</CodeProject> and <Actions>...</Actions> tags
-    let formattedContent = content.replace(/<Thinking>[\s\S]*?<\/Thinking>/g, "");
+    let formattedContent = content.replace(/<Thinking>/g, "🧠\n");
+    formattedContent = formattedContent.replace(/<\/Thinking>/g, "\n\n");
     formattedContent = formattedContent.replace(/<CodeProject[^>]*>[\s\S]*?<\/CodeProject>/g, "");
     formattedContent = formattedContent.replace(/<Actions>[\s\S]*?<\/Actions>/g, "");
+    // Handle V0LaunchTasks
+    formattedContent = formattedContent.replace(
+      /<V0LaunchTasks>[\s\S]*?<V0Task[^>]*taskNameActive="([^"]*)"[^>]*?\/>[\s\S]*?<\/V0LaunchTasks>/g,
+      "**v0 is working on:** $1\n",
+    );
+    formattedContent = formattedContent.replace(
+      /<V0LaunchTasks>[\s\S]*?<V0Task[^>]*taskNameComplete="([^"]*)"[^>]*?\/>[\s\S]*?<\/V0LaunchTasks>/g,
+      "**v0 has completed:** $1\n",
+    );
+    formattedContent = formattedContent.replace(/<V0LaunchTasks>[\s\S]*?<\/V0LaunchTasks>/g, "");
     return formattedContent.trim();
   };
 
@@ -153,6 +163,18 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
                     />
                   }
                   icon={Icon.Eye}
+                />
+                <Action.OpenInBrowser
+                  icon={Icon.Globe}
+                  title="View Chat in Browser"
+                  url={`https://v0.dev/chat/${chatId}`}
+                  shortcut={{ modifiers: ["cmd"], key: "b" }}
+                />
+                <Action.Push
+                  title="Add Message"
+                  target={<AddMessage chatId={chatId} revalidateChats={mutate} />}
+                  icon={Icon.Plus}
+                  shortcut={{ modifiers: ["cmd"], key: "n" }}
                 />
                 {data?.demo && (
                   <Action.OpenInBrowser

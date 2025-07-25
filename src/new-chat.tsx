@@ -1,4 +1,4 @@
-import { ActionPanel, Action, showToast, Toast, Form, useNavigation } from "@raycast/api";
+import { ActionPanel, Action, showToast, Toast, Form, useNavigation, Icon } from "@raycast/api";
 import { useForm } from "@raycast/utils";
 import type { CreateChatRequest, ScopeSummary } from "./types";
 import ViewChats from "./view-chats";
@@ -6,6 +6,7 @@ import { useProjects } from "./hooks/useProjects";
 import { useActiveProfile } from "./hooks/useActiveProfile";
 import { useScopes } from "./hooks/useScopes";
 import { v0ApiFetcher, V0ApiError } from "./lib/v0-api-utils";
+import InitializeChat from "./initialize-chat";
 
 interface FormValues {
   message: string;
@@ -102,6 +103,7 @@ export default function Command() {
       actions={
         <ActionPanel>
           <Action.SubmitForm title="Create Chat" onSubmit={handleSubmit} />
+          <Action.Push title="Initialize Chat from Files/url" target={<InitializeChat />} icon={Icon.Upload} />
         </ActionPanel>
       }
       isLoading={isLoadingProjects || isLoadingScopes || isLoadingProfileDetails}

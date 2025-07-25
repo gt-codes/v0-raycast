@@ -234,9 +234,34 @@ export interface CreateMessageResponse {
 }
 
 export interface Response {
-  object: "project";
   id: string;
+  object: "project";
   assigned: true;
+}
+
+export interface InitializeChatResponse {
+  id: string;
+  object: "chat";
+  shareable: boolean;
+  privacy: "public" | "private" | "team" | "team-edit" | "unlisted";
+  name?: string;
+  title?: string;
+  updatedAt?: string;
+  favorite: boolean;
+  authorId: string;
+  projectId?: string;
+  latestVersion?: VersionDetail;
+  url: string;
+  messages: MessageSummary[];
+  files?: {
+    lang: string;
+    meta: {
+      [k: string]: string;
+    };
+    source: string;
+  }[];
+  demo?: string;
+  text: string;
 }
 
 export interface ProjectDetail {
