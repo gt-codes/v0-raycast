@@ -7,6 +7,7 @@ import { useActiveProfile } from "./hooks/useActiveProfile";
 import { useScopes } from "./hooks/useScopes";
 import { v0ApiFetcher, V0ApiError } from "./lib/v0-api-utils";
 import InitializeChat from "./initialize-chat";
+import { useEffect } from "react";
 
 interface FormValues {
   message: string;
@@ -25,10 +26,8 @@ export default function Command() {
   const { activeProfileApiKey, activeProfileDefaultScope, isLoadingProfileDetails } = useActiveProfile();
   const { scopes: scopesData, isLoadingScopes } = useScopes(activeProfileApiKey);
 
-  const { handleSubmit, itemProps } = useForm<FormValues>({
-    initialValues: {
-      scopeId: activeProfileDefaultScope || "",
-    },
+  const { handleSubmit, itemProps, setValue } = useForm<FormValues>({
+    initialValues: { message: "", chatPrivacy: "private", scopeId: "" },
     onSubmit: async (values) => {
       if (!activeProfileApiKey) {
         showToast(Toast.Style.Failure, "API Key not available. Please set it in Preferences or manage profiles.");
@@ -97,6 +96,13 @@ export default function Command() {
       },
     },
   });
+
+  // Set the default scope once profile details are loaded
+  useEffect(() => {
+    if (!isLoadingProfileDetails && activeProfileDefaultScope) {
+      setValue("scopeId", activeProfileDefaultScope);
+    }
+  }, [activeProfileDefaultScope, isLoadingProfileDetails, setValue]);
 
   return (
     <Form
