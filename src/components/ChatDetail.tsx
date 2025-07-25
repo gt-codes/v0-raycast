@@ -104,7 +104,7 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
           <ActionPanel.Section>
             <Action.Push
               title="Add Message"
-              target={<AddMessage chatId={chatId} revalidateChats={mutate} />}
+              target={<AddMessage chatId={chatId} revalidateChats={mutate} chatTitle={data?.name || "Untitled Chat"} />}
               icon={Icon.Plus}
               shortcut={{ modifiers: ["cmd"], key: "n" }}
             />
@@ -172,7 +172,13 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
                 />
                 <Action.Push
                   title="Add Message"
-                  target={<AddMessage chatId={chatId} revalidateChats={mutate} />}
+                  target={
+                    <AddMessage
+                      chatId={chatId}
+                      revalidateChats={mutate}
+                      chatTitle={data?.name || data?.title || "Untitled Chat"}
+                    />
+                  }
                   icon={Icon.Plus}
                   shortcut={{ modifiers: ["cmd"], key: "n" }}
                 />
