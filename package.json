@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
-  "name": "v0",
-  "title": "v0",
+  "name": "v0 by Vercel",
+  "title": "v0 by Vercel",
   "description": "Create, view and manage your v0 chats within Raycast",
   "author": "garrett",
   "version": "1.0.0",

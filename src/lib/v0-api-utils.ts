@@ -37,6 +37,7 @@ export async function v0ApiFetcher<T>(url: string, options?: V0ApiFetcherOptions
     ...restOptions,
     headers: {
       "Content-Type": "application/json",
+      "User-Agent": "Raycast-v0-Extension",
       ...(restOptions?.headers || {}),
     },
     body: body ? (typeof body === "string" ? body : JSON.stringify(body)) : undefined,

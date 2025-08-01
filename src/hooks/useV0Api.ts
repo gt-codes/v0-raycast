@@ -17,6 +17,7 @@ export function useV0Api<T>(url: string, options?: Options<T>) {
     ...restOptions,
     headers: {
       "Content-Type": "application/json",
+      "User-Agent": "Raycast-v0-Extension",
       ...(restOptions?.headers || {}),
     },
     body: body ? (typeof body === "string" ? body : JSON.stringify(body)) : undefined,
