@@ -78,7 +78,6 @@ export default function ViewBillingCommand() {
     execute: !!activeProfileApiKey && !isLoadingProfileDetails,
   });
 
-
   if (error || planError) {
     return <Detail markdown={`Error: ${error?.message || planError?.message}`} />;
   }
@@ -103,12 +102,12 @@ export default function ViewBillingCommand() {
         <List.Item title="Current Plan" subtitle={planData.plan} icon={Icon.Stars} />
         <List.Item
           title="Plan Billing Cycle Start"
-          subtitle={new Date(planData.billingCycle.start * 1000).toLocaleDateString()}
+          subtitle={new Date(planData.billingCycle.start).toLocaleDateString()}
           icon={Icon.Calendar}
         />
         <List.Item
           title="Plan Billing Cycle End"
-          subtitle={new Date(planData.billingCycle.end * 1000).toLocaleDateString()}
+          subtitle={new Date(planData.billingCycle.end).toLocaleDateString()}
           icon={Icon.Calendar}
         />
         <List.Item
@@ -132,12 +131,12 @@ export default function ViewBillingCommand() {
           <List.Item title="Role" subtitle={billing.role} icon={Icon.Person} />
           <List.Item
             title="Billing Cycle Start"
-            subtitle={new Date(billing.billingCycle.start * 1000).toLocaleDateString()}
+            subtitle={new Date(billing.billingCycle.start).toLocaleDateString()}
             icon={Icon.Calendar}
           />
           <List.Item
             title="Billing Cycle End"
-            subtitle={new Date(billing.billingCycle.end * 1000).toLocaleDateString()}
+            subtitle={new Date(billing.billingCycle.end).toLocaleDateString()}
             icon={Icon.Calendar}
           />
           <List.Item
@@ -162,12 +161,12 @@ export default function ViewBillingCommand() {
                 accessories={
                   [
                     {
-                      text: `Effective: ${new Date(block.effectiveDate * 1000).toLocaleDateString()}`,
+                      text: `Effective: ${new Date(block.effectiveDate).toLocaleDateString()}`,
                       icon: Icon.ArrowRight,
                     },
                     block.expirationDate
                       ? {
-                          text: `Expires: ${new Date(block.expirationDate * 1000).toLocaleDateString()}`,
+                          text: `Expires: ${new Date(block.expirationDate).toLocaleDateString()}`,
                           icon: Icon.Calendar,
                         }
                       : undefined,
@@ -193,7 +192,7 @@ export default function ViewBillingCommand() {
           {billing.reset && (
             <List.Item
               title="Reset Date"
-              subtitle={new Date(billing.reset * 1000).toLocaleDateString()}
+              subtitle={new Date(billing.reset).toLocaleDateString()}
               icon={Icon.Calendar}
             />
           )}

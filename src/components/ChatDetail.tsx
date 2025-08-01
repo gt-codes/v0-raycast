@@ -4,8 +4,9 @@ import type { ChatDetailResponse, ChatMetadataResponse } from "../types";
 import AddMessage from "./AddMessage";
 import { useActiveProfile } from "../hooks/useActiveProfile";
 import { useState } from "react";
+import ChatFilesDetail from "./ChatFilesDetail";
 
-export default function ChatDetail({ chatId }: { chatId: string }) {
+export default function ChatDetail({ chatId, scopeId }: { chatId: string; scopeId?: string }) {
   const { activeProfileApiKey, isLoadingProfileDetails } = useActiveProfile();
   const [messageFilter, setMessageFilter] = useState<"all" | "user" | "v0">("all");
 
@@ -15,6 +16,7 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
       headers: {
         Authorization: `Bearer ${activeProfileApiKey}`,
         "Content-Type": "application/json",
+        ...(scopeId && { "x-scope": scopeId }), // Add x-scope header if scopeId is present
       },
       parseResponse: (response) => response.json(),
       execute: !!activeProfileApiKey && !isLoadingProfileDetails,
@@ -57,17 +59,39 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
     return { source: Icon.Cog, tintColor: Color.SecondaryText };
   };
 
-  const getMessagePreview = (content: string) => {
-    // Truncate long messages for preview
+  const formatPreviewContent = (content: string) => {
     const maxLength = 100;
-    const formattedContent = formatMessageContent(content);
-    if (formattedContent.length <= maxLength) {
-      return formattedContent;
+    let previewContent = content.replace(/<Thinking>/g, "");
+    previewContent = previewContent.replace(/<\/Thinking>/g, " ");
+    // Remove other tags that might not be relevant for a short preview
+    previewContent = previewContent.replace(/<CodeProject[^>]*>[\s\S]*?<\/CodeProject>/g, "");
+    previewContent = previewContent.replace(/<Actions>[\s\S]*?<\/Actions>/g, "");
+    previewContent = previewContent.replace(
+      /<V0LaunchTasks>[\s\S]*?<V0Task[^>]*taskNameActive="([^"]*)"[^>]*?\/>[\s\S]*?<\/V0LaunchTasks>/g,
+      "**v0 is working on:** $1 ",
+    );
+    previewContent = previewContent.replace(
+      /<V0LaunchTasks>[\s\S]*?<V0Task[^>]*taskNameComplete="([^"]*)"[^>]*?\/>[\s\S]*?<\/V0LaunchTasks>/g,
+      "**v0 has completed:** $1 ",
+    );
+    previewContent = previewContent.replace(/<V0LaunchTasks>[\s\S]*?<\/V0LaunchTasks>/g, "");
+
+    // Remove newlines for a single-line preview display
+    previewContent = previewContent.replace(/\n/g, " ");
+
+    if (previewContent.length <= maxLength) {
+      return previewContent.trim();
     }
-    return `${formattedContent.substring(0, maxLength)}...`;
+    return `${previewContent.substring(0, maxLength).trim()}...`;
   };
 
-  const formatMessageContent = (content: string) => {
+  const getMessagePreview = (content: string) => {
+    // Use the dedicated preview formatting function
+    const previewContent = formatPreviewContent(content);
+    return previewContent;
+  };
+
+  const formatFullMessageContent = (content: string) => {
     let formattedContent = content.replace(/<Thinking>/g, "🧠\n");
     formattedContent = formattedContent.replace(/<\/Thinking>/g, "\n\n");
     formattedContent = formattedContent.replace(/<CodeProject[^>]*>[\s\S]*?<\/CodeProject>/g, "");
@@ -82,6 +106,7 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
       "**v0 has completed:** $1\n",
     );
     formattedContent = formattedContent.replace(/<V0LaunchTasks>[\s\S]*?<\/V0LaunchTasks>/g, "");
+
     return formattedContent.trim();
   };
 
@@ -104,7 +129,14 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
           <ActionPanel.Section>
             <Action.Push
               title="Add Message"
-              target={<AddMessage chatId={chatId} revalidateChats={mutate} chatTitle={data?.name || "Untitled Chat"} />}
+              target={
+                <AddMessage
+                  chatId={chatId}
+                  scopeId={scopeId}
+                  revalidateChats={mutate}
+                  chatTitle={data?.name || "Untitled Chat"}
+                />
+              }
               icon={Icon.Plus}
               shortcut={{ modifiers: ["cmd"], key: "n" }}
             />
@@ -136,7 +168,7 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
                   title="View Full Message"
                   target={
                     <Detail
-                      markdown={formatMessageContent(message.content)}
+                      markdown={formatFullMessageContent(message.content)}
                       metadata={
                         <Detail.Metadata>
                           <Detail.Metadata.Label title="Sent at" text={new Date(message.createdAt).toLocaleString()} />
@@ -170,6 +202,14 @@ export default function ChatDetail({ chatId }: { chatId: string }) {
                   url={`https://v0.dev/chat/${chatId}`}
                   shortcut={{ modifiers: ["cmd"], key: "b" }}
                 />
+                {data?.latestVersion?.files && data.latestVersion.files.length > 0 && (
+                  <Action.Push
+                    title="View Latest Files"
+                    icon={Icon.Document}
+                    target={<ChatFilesDetail files={data.latestVersion.files} />}
+                    shortcut={{ modifiers: ["cmd"], key: "f" }}
+                  />
+                )}
                 <Action.Push
                   title="Add Message"
                   target={

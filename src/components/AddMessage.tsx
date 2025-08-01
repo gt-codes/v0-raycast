@@ -16,9 +16,10 @@ interface AddMessageProps {
   chatId: string;
   chatTitle?: string;
   revalidateChats: () => void;
+  scopeId?: string; // Add scopeId to props
 }
 
-export default function AddMessage({ chatId, chatTitle, revalidateChats }: AddMessageProps) {
+export default function AddMessage({ chatId, chatTitle, revalidateChats, scopeId }: AddMessageProps) {
   const { push } = useNavigation();
   const { activeProfileApiKey, isLoadingProfileDetails, activeProfileDefaultScope } = useActiveProfile();
 
@@ -54,7 +55,7 @@ export default function AddMessage({ chatId, chatTitle, revalidateChats }: AddMe
           headers: {
             Authorization: `Bearer ${activeProfileApiKey}`,
             "Content-Type": "application/json",
-            "x-scope": activeProfileDefaultScope || "",
+            "x-scope": scopeId || activeProfileDefaultScope || "", // Use scopeId if available, otherwise default
           },
           body: JSON.stringify(requestBody),
         });
@@ -64,7 +65,7 @@ export default function AddMessage({ chatId, chatTitle, revalidateChats }: AddMe
         toast.message = "Your message has been sent successfully!";
 
         // Push back to the chat detail to show the new message
-        push(<ChatDetail chatId={chatId} />);
+        push(<ChatDetail chatId={chatId} scopeId={scopeId} />);
 
         revalidateChats();
 

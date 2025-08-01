@@ -8,6 +8,7 @@ import { useScopes } from "./hooks/useScopes";
 import { v0ApiFetcher, V0ApiError } from "./lib/v0-api-utils";
 import InitializeChat from "./initialize-chat";
 import { useEffect } from "react";
+import type { CreateChatResponse } from "./types";
 
 interface FormValues {
   message: string;
@@ -27,7 +28,7 @@ export default function Command() {
   const { scopes: scopesData, isLoadingScopes } = useScopes(activeProfileApiKey);
 
   const { handleSubmit, itemProps, setValue } = useForm<FormValues>({
-    initialValues: { message: "", chatPrivacy: "private", scopeId: "" },
+    initialValues: { message: "", chatPrivacy: "private", scopeId: activeProfileDefaultScope || "" },
     onSubmit: async (values) => {
       if (!activeProfileApiKey) {
         showToast(Toast.Style.Failure, "API Key not available. Please set it in Preferences or manage profiles.");
@@ -49,6 +50,7 @@ export default function Command() {
             ...(typeof values.imageGenerations === "boolean" && { imageGenerations: values.imageGenerations }),
             ...(typeof values.thinking === "boolean" && { thinking: values.thinking }),
           },
+          responseMode: "async",
         };
 
         // Remove modelConfiguration if it's empty
@@ -56,7 +58,7 @@ export default function Command() {
           delete requestBody.modelConfiguration;
         }
 
-        await v0ApiFetcher<CreateChatRequest>("https://api.v0.dev/v1/chats", {
+        await v0ApiFetcher<CreateChatResponse>("https://api.v0.dev/v1/chats", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${activeProfileApiKey}`,

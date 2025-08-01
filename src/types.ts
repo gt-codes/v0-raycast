@@ -17,12 +17,7 @@ export interface ChatSummary {
   favorite: boolean;
   authorId: string;
   projectId?: string;
-  latestVersion?: {
-    id: string;
-    object: "version";
-    demoUrl?: string;
-    status: "pending" | "completed" | "failed";
-  };
+  latestVersion?: VersionDetail;
 }
 
 export interface VersionDetail {
@@ -30,7 +25,7 @@ export interface VersionDetail {
   object: "version";
   status: "pending" | "completed" | "failed";
   demoUrl?: string;
-  files: {
+  files?: {
     object: "file";
     name: string;
     content: string;
@@ -156,39 +151,64 @@ export interface ForkChatResponse {
 
 export interface CreateChatRequest {
   message: string;
-  attachments?: Array<{
-    type: string;
-    url: string;
-    description?: string;
-  }>;
+  attachments?: { url: string }[];
   system?: string;
   chatPrivacy?: "public" | "private" | "team-edit" | "team" | "unlisted";
   projectId?: string;
   modelConfiguration?: {
-    modelId?: string;
+    modelId?: "v0-1.5-sm" | "v0-1.5-md" | "v0-1.5-lg";
     imageGenerations?: boolean;
     thinking?: boolean;
   };
+  responseMode?: "sync" | "async";
 }
 
 export interface CreateChatResponse {
   id: string;
   object: "chat";
   url: string;
-  files?: {
-    lang: string;
-    meta: {
-      [k: string]: string;
-    };
-    source: string;
-  }[];
-  demo?: string;
-  text: string;
-  modelConfiguration: {
-    modelId: "v0-1.5-sm" | "v0-1.5-md" | "v0-1.5-lg";
-    imageGenerations?: boolean;
-    thinking?: boolean;
+  shareable: boolean;
+  privacy: "public" | "private" | "team" | "team-edit" | "unlisted";
+  name?: string;
+  title?: string;
+  updatedAt: string;
+  favorite: boolean;
+  authorId: string;
+  projectId?: string;
+  latestVersion?: {
+    id: string;
+    object: "version";
+    status: "pending" | "completed" | "failed";
+    demoUrl?: string;
+    files: {
+      object: "file";
+      name: string;
+      content: string;
+    }[];
   };
+  messages: {
+    id: string;
+    object: "message";
+    content: string;
+    createdAt: string;
+    type:
+      | "message"
+      | "forked-block"
+      | "forked-chat"
+      | "open-in-v0"
+      | "refinement"
+      | "added-environment-variables"
+      | "added-integration"
+      | "deleted-file"
+      | "moved-file"
+      | "renamed-file"
+      | "edited-file"
+      | "replace-src"
+      | "reverted-block"
+      | "fix-with-v0"
+      | "sync-git";
+    role: "user" | "assistant";
+  }[];
 }
 
 export interface CreateProjectResponse {

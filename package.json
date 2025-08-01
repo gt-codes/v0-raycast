@@ -12,10 +12,10 @@
       "type": "password",
       "title": "Default API Key",
       "required": true,
-      "description": "Generate an account token scoped to 'Full Account'. Get one from https://vercel.com/account/settings/tokens"
+      "description": "Get your API key from your v0 account settings: https://v0.dev/settings/keys"
     }
   ],
-  "icon": "extension-icon.png",
+  "icon": "icon.png",
   "license": "MIT",
   "commands": [
     {

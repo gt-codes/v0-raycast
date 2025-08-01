@@ -73,6 +73,7 @@ export default function Command(props: { scopeId?: string; projectId?: string })
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${activeProfileApiKey}`,
+            "x-scope": activeProfileDefaultScope || "",
           },
         }),
         {
