@@ -116,12 +116,10 @@ export default function Command() {
       }
       isLoading={isLoadingProjects || isLoadingScopes || isLoadingProfileDetails}
     >
-      <Form.Description text="Create a new chat with v0. Start by describing what you want to build or ask a question." />
-
       <Form.TextArea
         {...itemProps.message}
         title="Message"
-        placeholder="Describe what you want to build or ask a question..."
+        placeholder="Ask v0 to build..."
         info="Your initial message to v0. This will start the conversation."
       />
       <Form.Dropdown
