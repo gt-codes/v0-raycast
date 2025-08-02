@@ -9,6 +9,7 @@ import { v0ApiFetcher, V0ApiError } from "./lib/v0-api-utils";
 import InitializeChat from "./initialize-chat";
 import { useEffect } from "react";
 import type { CreateChatResponse } from "./types";
+import fs from "fs/promises";
 
 interface FormValues {
   message: string;
@@ -19,6 +20,7 @@ interface FormValues {
   imageGenerations?: boolean;
   thinking?: boolean;
   scopeId?: string;
+  attachments: string[];
 }
 
 export default function Command() {
@@ -28,7 +30,7 @@ export default function Command() {
   const { scopes: scopesData, isLoadingScopes } = useScopes(activeProfileApiKey);
 
   const { handleSubmit, itemProps, setValue } = useForm<FormValues>({
-    initialValues: { message: "", chatPrivacy: "private", scopeId: activeProfileDefaultScope || "" },
+    initialValues: { message: "", chatPrivacy: "private", scopeId: activeProfileDefaultScope || "", attachments: [] },
     onSubmit: async (values) => {
       if (!activeProfileApiKey) {
         showToast(Toast.Style.Failure, "API Key not available. Please set it in Preferences or manage profiles.");
@@ -52,6 +54,19 @@ export default function Command() {
           },
           responseMode: "async",
         };
+
+        if (values.attachments && values.attachments.length > 0) {
+          const attachments = await Promise.all(
+            values.attachments.map(async (filePath) => {
+              const fileContent = await fs.readFile(filePath, { encoding: "base64" });
+              const mimeType = "application/octet-stream"; // Default MIME type
+              // You might want to infer the MIME type based on the file extension
+              // For simplicity, we'll use a generic one here.
+              return { url: `data:${mimeType};base64,${fileContent}` };
+            }),
+          );
+          requestBody.attachments = attachments;
+        }
 
         // Remove modelConfiguration if it's empty
         if (requestBody.modelConfiguration && Object.keys(requestBody.modelConfiguration).length === 0) {
@@ -121,6 +136,14 @@ export default function Command() {
         title="Message"
         placeholder="Ask v0 to build..."
         info="Your initial message to v0. This will start the conversation."
+      />
+      <Form.FilePicker
+        id="attachments"
+        title="Attachments"
+        allowMultipleSelection
+        value={itemProps.attachments.value}
+        onChange={itemProps.attachments.onChange}
+        info="Select files to attach to your message. Files will be converted to data URLs."
       />
       <Form.Dropdown
         id="modelId"

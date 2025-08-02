@@ -4,12 +4,14 @@ import type { CreateMessageRequest } from "../types";
 import ChatDetail from "./ChatDetail";
 import { useActiveProfile } from "../hooks/useActiveProfile";
 import { v0ApiFetcher, V0ApiError } from "../lib/v0-api-utils";
+import fs from "fs/promises";
 
 interface FormValues {
   message: string;
   modelId?: "v0-1.5-sm" | "v0-1.5-md" | "v0-1.5-lg";
   imageGenerations?: boolean;
   thinking?: boolean;
+  attachments: string[];
 }
 
 interface AddMessageProps {
@@ -43,7 +45,21 @@ export default function AddMessage({ chatId, chatTitle, revalidateChats, scopeId
             ...(typeof values.imageGenerations === "boolean" && { imageGenerations: values.imageGenerations }),
             ...(typeof values.thinking === "boolean" && { thinking: values.thinking }),
           },
+          responseMode: "async",
         };
+
+        if (values.attachments && values.attachments.length > 0) {
+          const attachments = await Promise.all(
+            values.attachments.map(async (filePath) => {
+              const fileContent = await fs.readFile(filePath, { encoding: "base64" });
+              const mimeType = "application/octet-stream"; // Default MIME type
+              // You might want to infer the MIME type based on the file extension
+              // For simplicity, we'll use a generic one here.
+              return { url: `data:${mimeType};base64,${fileContent}` };
+            }),
+          );
+          requestBody.attachments = attachments;
+        }
 
         // Remove modelConfiguration if it's empty
         if (requestBody.modelConfiguration && Object.keys(requestBody.modelConfiguration).length === 0) {
@@ -109,6 +125,14 @@ export default function AddMessage({ chatId, chatTitle, revalidateChats, scopeId
         title="Message"
         placeholder="Describe what you want to build or ask a question..."
         info="Your message to v0. This will continue the conversation."
+      />
+      <Form.FilePicker
+        id="attachments"
+        title="Attachments"
+        allowMultipleSelection
+        value={itemProps.attachments.value}
+        onChange={itemProps.attachments.onChange}
+        info="Select files to attach to your message. Files will be converted to data URLs."
       />
       <Form.Dropdown
         id="modelId"

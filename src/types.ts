@@ -3,16 +3,14 @@ export interface FindChatsResponse {
   data: ChatSummary[];
 }
 
+export type ChatPrivacy = "public" | "private" | "team" | "team-edit" | "unlisted";
+
 export interface ChatSummary {
   id: string;
   object: "chat";
   shareable: boolean;
-  privacy: "public" | "private" | "team" | "team-edit" | "unlisted";
+  privacy: ChatPrivacy;
   name?: string;
-  /**
-   * @deprecated
-   */
-  title?: string;
   updatedAt?: string;
   favorite: boolean;
   authorId: string;
@@ -20,16 +18,18 @@ export interface ChatSummary {
   latestVersion?: VersionDetail;
 }
 
+export interface VersionFile {
+  object: "file";
+  name: string;
+  content: string;
+}
+
 export interface VersionDetail {
   id: string;
   object: "version";
   status: "pending" | "completed" | "failed";
   demoUrl?: string;
-  files?: {
-    object: "file";
-    name: string;
-    content: string;
-  }[];
+  files?: VersionFile[];
 }
 
 export interface MessageSummary {
@@ -61,12 +61,8 @@ export interface ChatDetailResponse {
   id: string;
   object: "chat";
   shareable: boolean;
-  privacy: "public" | "private" | "team" | "team-edit" | "unlisted";
+  privacy: ChatPrivacy;
   name?: string;
-  /**
-   * @deprecated
-   */
-  title?: string;
   updatedAt?: string;
   favorite: boolean;
   authorId: string;
@@ -81,10 +77,6 @@ export interface ChatDetailResponse {
     };
     source: string;
   }[];
-  /**
-   * @deprecated
-   */
-  demo?: string;
   text: string;
 }
 
@@ -113,10 +105,9 @@ export interface ForkChatResponse {
   id: string;
   object: "chat";
   url: string;
-  demo?: string;
   shareable: boolean;
-  privacy?: "public" | "private" | "team" | "team-edit" | "unlisted";
-  title?: string;
+  privacy?: ChatPrivacy;
+  name?: string;
   updatedAt?: string;
   favorite: boolean;
   authorId: string;
@@ -124,39 +115,19 @@ export interface ForkChatResponse {
     id: string;
     status: "pending" | "completed" | "failed";
   };
-  messages: {
-    id: string;
-    object: "message";
-    content: string;
-    createdAt: string;
-    type:
-      | "message"
-      | "forked-block"
-      | "forked-chat"
-      | "open-in-v0"
-      | "refinement"
-      | "added-environment-variables"
-      | "added-integration"
-      | "deleted-file"
-      | "moved-file"
-      | "renamed-file"
-      | "edited-file"
-      | "replace-src"
-      | "reverted-block"
-      | "fix-with-v0"
-      | "sync-git";
-    role: "user" | "assistant";
-  }[];
+  messages: MessageSummary[];
 }
+
+export type V0Model = "v0-1.5-sm" | "v0-1.5-md" | "v0-1.5-lg" | "v0-1.0-md";
 
 export interface CreateChatRequest {
   message: string;
   attachments?: { url: string }[];
   system?: string;
-  chatPrivacy?: "public" | "private" | "team-edit" | "team" | "unlisted";
+  chatPrivacy?: ChatPrivacy;
   projectId?: string;
+  model?: V0Model;
   modelConfiguration?: {
-    modelId?: "v0-1.5-sm" | "v0-1.5-md" | "v0-1.5-lg";
     imageGenerations?: boolean;
     thinking?: boolean;
   };
@@ -168,47 +139,14 @@ export interface CreateChatResponse {
   object: "chat";
   url: string;
   shareable: boolean;
-  privacy: "public" | "private" | "team" | "team-edit" | "unlisted";
+  privacy: ChatPrivacy;
   name?: string;
-  title?: string;
   updatedAt: string;
   favorite: boolean;
   authorId: string;
   projectId?: string;
-  latestVersion?: {
-    id: string;
-    object: "version";
-    status: "pending" | "completed" | "failed";
-    demoUrl?: string;
-    files: {
-      object: "file";
-      name: string;
-      content: string;
-    }[];
-  };
-  messages: {
-    id: string;
-    object: "message";
-    content: string;
-    createdAt: string;
-    type:
-      | "message"
-      | "forked-block"
-      | "forked-chat"
-      | "open-in-v0"
-      | "refinement"
-      | "added-environment-variables"
-      | "added-integration"
-      | "deleted-file"
-      | "moved-file"
-      | "renamed-file"
-      | "edited-file"
-      | "replace-src"
-      | "reverted-block"
-      | "fix-with-v0"
-      | "sync-git";
-    role: "user" | "assistant";
-  }[];
+  latestVersion?: VersionDetail;
+  messages: MessageSummary[];
 }
 
 export interface CreateProjectResponse {
@@ -221,15 +159,14 @@ export interface CreateProjectResponse {
 export interface CreateMessageRequest {
   message: string;
   attachments?: Array<{
-    type: string;
     url: string;
-    description?: string;
   }>;
+  model?: V0Model;
   modelConfiguration?: {
-    modelId?: string;
     imageGenerations?: boolean;
     thinking?: boolean;
   };
+  responseMode?: "sync" | "async";
 }
 
 export interface CreateMessageResponse {
@@ -244,28 +181,30 @@ export interface CreateMessageResponse {
     };
     source: string;
   }[];
-  demo?: string;
   text: string;
   modelConfiguration: {
-    modelId: "v0-1.5-sm" | "v0-1.5-md" | "v0-1.5-lg";
+    modelId: V0Model;
     imageGenerations?: boolean;
     thinking?: boolean;
   };
 }
 
-export interface Response {
+export interface Deployment {
   id: string;
-  object: "project";
-  assigned: true;
+  object: "deployment";
+  projectId: string;
+  url: string;
+  status: "BUILDING" | "READY" | "CANCELED" | "ERROR";
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface InitializeChatResponse {
   id: string;
   object: "chat";
   shareable: boolean;
-  privacy: "public" | "private" | "team" | "team-edit" | "unlisted";
+  privacy: ChatPrivacy;
   name?: string;
-  title?: string;
   updatedAt?: string;
   favorite: boolean;
   authorId: string;
@@ -280,7 +219,6 @@ export interface InitializeChatResponse {
     };
     source: string;
   }[];
-  demo?: string;
   text: string;
 }
 
@@ -333,4 +271,58 @@ export interface ProjectChatsResponse {
   name: string;
   description?: string;
   chats: ChatSummary[];
+}
+
+export enum ApiVersion {
+  V1 = "v1",
+}
+
+export interface File {
+  lang: string;
+  meta: Record<string, string>;
+  source: string;
+}
+
+export interface Chat {
+  id: string;
+  object: "chat";
+  shareable: boolean;
+  privacy: ChatPrivacy;
+  name?: string;
+  updatedAt: string;
+  favorite: boolean;
+  authorId: string;
+  projectId?: string;
+  latestVersion?: VersionDetail;
+  url: string;
+  messages: MessageSummary[];
+  files?: File[];
+  text: string;
+}
+
+export interface CompletionMessage {
+  role: "user" | "assistant" | "system";
+  content: string | Array<string | { type: "image_url"; image_url: { url: string } }>;
+}
+
+export interface ChatCompletionRequest {
+  model: V0Model;
+  messages: CompletionMessage[];
+  stream?: boolean;
+  tools?: Array<Record<string, unknown>>;
+  tool_choice?: string | Record<string, unknown>;
+  max_completion_tokens?: number;
+}
+
+export interface ChatCompletionResponse {
+  id: string;
+  model: V0Model;
+  object: "chat.completion" | "chat.completion.chunk";
+  created: number;
+  choices: Array<{
+    index: number;
+    message?: CompletionMessage;
+    delta?: CompletionMessage;
+    finish_reason: string | null;
+  }>;
 }

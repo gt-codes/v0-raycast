@@ -9,7 +9,7 @@ export default function ChatMetadataDetail({ chat }: { chat: ChatSummary }) {
     return privacy
       .split("-")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" "); 
+      .join(" ");
   };
 
   return (
