@@ -196,11 +196,7 @@ export default function ManageProfiles() {
     showToast(Toast.Style.Success, "Active profile switched!");
   };
 
-  const handleUpdateProfile = (updatedProfile: Profile) => {
-    setProfiles((prev) => prev?.map((p) => (p.id === updatedProfile.id ? updatedProfile : p)) || []);
-  };
-
-  const handleRenameProfile = (updatedProfile: Profile) => {
+  const handleProfileUpdate = (updatedProfile: Profile) => {
     setProfiles((prev) => prev?.map((p) => (p.id === updatedProfile.id ? updatedProfile : p)) || []);
   };
 
@@ -248,12 +244,12 @@ export default function ManageProfiles() {
                 />
                 <Action.Push
                   title="Set Default Scope"
-                  target={<SetDefaultScopeForm profile={profile} onUpdate={handleUpdateProfile} />}
+                  target={<SetDefaultScopeForm profile={profile} onUpdate={handleProfileUpdate} />}
                   icon={Icon.Star}
                 />
                 <Action.Push
                   title="Rename Profile"
-                  target={<RenameProfileForm profile={profile} onUpdate={handleRenameProfile} />}
+                  target={<RenameProfileForm profile={profile} onUpdate={handleProfileUpdate} />}
                   icon={Icon.Pencil}
                   shortcut={{ modifiers: ["cmd"], key: "r" }}
                 />

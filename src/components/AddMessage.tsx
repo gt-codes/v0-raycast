@@ -146,11 +146,7 @@ export default function AddMessage({ chatId, chatTitle, revalidateChats, scopeId
         <Form.Dropdown.Item value="v0-1.5-md" title="v0-1.5-md" />
         <Form.Dropdown.Item value="v0-1.5-lg" title="v0-1.5-lg" />
       </Form.Dropdown>
-      <Form.Dropdown id="chat" defaultValue={displayTitle} title="Chat" info="Your message will be sent to this chat.">
-        <Form.Dropdown.Item value={displayTitle} title={displayTitle} />
-      </Form.Dropdown>
-      {/* <Form.Checkbox label="Image Generations" {...itemProps.imageGenerations} />
-      <Form.Checkbox label="Thinking" {...itemProps.thinking} /> */}
+      <Form.Description title="Chat" text={displayTitle} />
     </Form>
   );
 }

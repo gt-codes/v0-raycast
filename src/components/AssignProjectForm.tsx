@@ -88,7 +88,6 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
   const handleNewProjectCreated = (newProjectId: string) => {
     revalidateProjects(); // Refresh the list of projects
     assignProject(newProjectId); // Automatically assign the new project to the chat
-    pop(); // Go back to the AssignProjectForm after creation and assignment
   };
 
   if (projectError) {

@@ -73,7 +73,7 @@ export default function Command(props: { scopeId?: string; projectId?: string })
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${activeProfileApiKey}`,
-            "x-scope": activeProfileDefaultScope || "",
+            "x-scope": selectedScopeFilter || "", // Use selectedScopeFilter instead of activeProfileDefaultScope
           },
         }),
         {
@@ -276,7 +276,7 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                       title="Show All Project Chats"
                       icon={Icon.Bubble}
                       target={<Command projectId={chat.projectId} />}
-                      shortcut={{ modifiers: ["cmd", "shift"], key: "p" }}
+                      shortcut={{ modifiers: ["cmd", "opt"], key: "p" }}
                     />
                   )}
                 </ActionPanel.Section>
