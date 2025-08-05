@@ -213,11 +213,7 @@ export default function ChatDetail({ chatId, scopeId }: { chatId: string; scopeI
                 <Action.Push
                   title="Add Message"
                   target={
-                    <AddMessage
-                      chatId={chatId}
-                      revalidateChats={mutate}
-                      chatTitle={data?.name || "Untitled Chat"}
-                    />
+                    <AddMessage chatId={chatId} revalidateChats={mutate} chatTitle={data?.name || "Untitled Chat"} />
                   }
                   icon={Icon.Plus}
                   shortcut={{ modifiers: ["cmd"], key: "n" }}
