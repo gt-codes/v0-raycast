@@ -13,6 +13,7 @@ import {
 } from "@raycast/api";
 import { useEffect, useState } from "react";
 import { useCachedState } from "@raycast/utils";
+import { showFailureToast } from "@raycast/utils";
 import type { Profile, ScopeSummary } from "./types";
 import { v4 as uuidv4 } from "uuid";
 import { Icon } from "@raycast/api";
@@ -28,10 +29,7 @@ function AddProfileForm(props: { onAdd: (profile: Profile) => void }) {
 
   async function handleSubmit(values: { name: string; apiKey: string }) {
     if (!values.name || !values.apiKey) {
-      showToast({
-        style: Toast.Style.Failure,
-        title: "Name and API Key are required.",
-      });
+      showFailureToast("Name and API Key are required.");
       return;
     }
 
@@ -59,10 +57,7 @@ function RenameProfileForm(props: { profile: Profile; onUpdate: (profile: Profil
 
   async function handleSubmit(values: { name: string }) {
     if (!values.name) {
-      showToast({
-        style: Toast.Style.Failure,
-        title: "Profile name cannot be empty.",
-      });
+      showFailureToast("Profile name cannot be empty.");
       return;
     }
 
@@ -203,7 +198,7 @@ export default function ManageProfiles() {
 
   const handleDeleteProfile = async (id: string) => {
     if (id === "default") {
-      showToast(Toast.Style.Failure, "Cannot delete the default profile.");
+      showFailureToast("Cannot delete the default profile.");
       return;
     }
 

@@ -1,5 +1,6 @@
 import { ActionPanel, Form, Action, showToast, Toast, Icon, List } from "@raycast/api";
 import { useNavigation } from "@raycast/api";
+import { showFailureToast } from "@raycast/utils";
 import { useProjects } from "../hooks/useProjects";
 import { useState, useEffect } from "react";
 import type { ChatSummary, AssignProjectResponse } from "../types";
@@ -35,7 +36,9 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
 
   const assignProject = async (projectIdToAssign: string) => {
     if (!activeProfileApiKey) {
-      showToast(Toast.Style.Failure, "API Key not available. Please set it in Preferences or manage profiles.");
+      showFailureToast("API Key not available. Please set it in Preferences or manage profiles.", {
+        title: "Assignment Failed",
+      });
       return;
     }
     const toast = await showToast({
@@ -67,12 +70,12 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
         throw new Error("Project assignment failed.");
       }
     } catch (error) {
-      toast.style = Toast.Style.Failure;
-      toast.title = "Assignment Failed";
       if (error instanceof V0ApiError) {
-        toast.message = error.message;
+        showFailureToast(error.message, { title: "Assignment Failed" });
       } else {
-        toast.message = `Failed to assign project: ${error instanceof Error ? error.message : String(error)}`;
+        showFailureToast(`Failed to assign project: ${error instanceof Error ? error.message : String(error)}`, {
+          title: "Assignment Failed",
+        });
       }
     }
   };
@@ -81,7 +84,7 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
     if (selectedProjectId) {
       assignProject(selectedProjectId);
     } else {
-      showToast(Toast.Style.Failure, "Please select a project.");
+      showFailureToast("Please select a project.");
     }
   };
 
@@ -108,7 +111,7 @@ export default function AssignProjectForm({ chat, revalidateChats }: AssignProje
 
   // If no projects are loaded after fetching, directly push to CreateProjectForm
   if (projects.length === 0 && !isLoadingProjects && !isLoadingProfileDetails) {
-    showToast(Toast.Style.Failure, "No projects found. Please create a new project to assign to this chat.");
+    showFailureToast("No projects found. Please create a new project to assign to this chat.");
     return <CreateProjectForm onProjectCreated={handleNewProjectCreated} />;
   }
 

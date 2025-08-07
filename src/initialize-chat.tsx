@@ -1,5 +1,6 @@
 import { ActionPanel, Action, showToast, Toast, Form, useNavigation } from "@raycast/api";
 import { useForm, FormValidation } from "@raycast/utils";
+import { showFailureToast } from "@raycast/utils";
 import { useProjects } from "./hooks/useProjects";
 import { useActiveProfile } from "./hooks/useActiveProfile";
 import { useScopes } from "./hooks/useScopes";
@@ -77,7 +78,9 @@ export default function Command() {
     },
     onSubmit: async (formValues) => {
       if (!activeProfileApiKey) {
-        showToast(Toast.Style.Failure, "API Key not available. Please set it in Preferences or manage profiles.");
+        showFailureToast("API Key not available. Please set it in Preferences or manage profiles.", {
+          title: "Initialization Failed",
+        });
         return;
       }
 
@@ -170,12 +173,12 @@ export default function Command() {
         // Navigate to the newly created chat's detail page
         push(<ChatDetail chatId={chatResponse.id} />);
       } catch (error) {
-        toast.style = Toast.Style.Failure;
-        toast.title = "Initialization Failed";
         if (error instanceof V0ApiError) {
-          toast.message = error.message;
+          showFailureToast(error.message, { title: "Initialization Failed" });
         } else {
-          toast.message = `Failed to initialize chat: ${error instanceof Error ? error.message : String(error)}`;
+          showFailureToast(`Failed to initialize chat: ${error instanceof Error ? error.message : String(error)}`, {
+            title: "Initialization Failed",
+          });
         }
         throw error;
       }

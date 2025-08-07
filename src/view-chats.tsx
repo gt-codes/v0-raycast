@@ -1,4 +1,5 @@
 import { ActionPanel, Detail, List, Action, Icon, showToast, Toast, confirmAlert, Keyboard } from "@raycast/api";
+import { showFailureToast } from "@raycast/utils";
 import type { ChatSummary, FindChatsResponse, ForkChatResponse, ProjectChatsResponse } from "./types";
 import ChatDetail from "./components/ChatDetail";
 import AddMessage from "./components/AddMessage";
@@ -59,7 +60,7 @@ export default function Command(props: { scopeId?: string; projectId?: string })
 
   const deleteChat = async (chatId: string, chatTitle: string) => {
     if (!activeProfileApiKey) {
-      showToast(Toast.Style.Failure, "API Key not available.");
+      showFailureToast("API Key not available.", { title: "Delete Failed" });
       return;
     }
     const toast = await showToast({
@@ -94,15 +95,15 @@ export default function Command(props: { scopeId?: string; projectId?: string })
       toast.title = "Chat Deleted";
       toast.message = `"${chatTitle}" has been deleted successfully.`;
     } catch (error) {
-      toast.style = Toast.Style.Failure;
-      toast.title = "Delete Failed";
-      toast.message = error instanceof V0ApiError ? error.response.error.message : "Failed to delete chat";
+      showFailureToast(error instanceof V0ApiError ? error.response.error.message : "Failed to delete chat", {
+        title: "Delete Failed",
+      });
     }
   };
 
   const favoriteChat = async (chatId: string, isFavorite: boolean) => {
     if (!activeProfileApiKey) {
-      showToast(Toast.Style.Failure, "API Key not available.");
+      showFailureToast("API Key not available.", { title: "Favorite Failed" });
       return;
     }
     const toast = await showToast({
@@ -140,15 +141,15 @@ export default function Command(props: { scopeId?: string; projectId?: string })
       toast.title = isFavorite ? "Chat Favorited" : "Chat Unfavorited";
       toast.message = `Chat has been ${isFavorite ? "favorited" : "unfavorited"} successfully.`;
     } catch (error) {
-      toast.style = Toast.Style.Failure;
-      toast.title = "Favorite Failed";
-      toast.message = error instanceof V0ApiError ? error.response.error.message : "Failed to favorite chat";
+      showFailureToast(error instanceof V0ApiError ? error.response.error.message : "Failed to favorite chat", {
+        title: "Favorite Failed",
+      });
     }
   };
 
   const forkChat = async (chat: ChatSummary) => {
     if (!activeProfileApiKey) {
-      showToast(Toast.Style.Failure, "API Key not available.");
+      showFailureToast("API Key not available.", { title: "Fork Failed" });
       return;
     }
     const toast = await showToast({
@@ -173,9 +174,9 @@ export default function Command(props: { scopeId?: string; projectId?: string })
       toast.title = "Chat Forked";
       toast.message = `"${chat.name}" has been forked successfully!`;
     } catch (error) {
-      toast.style = Toast.Style.Failure;
-      toast.title = "Fork Failed";
-      toast.message = error instanceof V0ApiError ? error.response.error.message : "Failed to fork chat";
+      showFailureToast(error instanceof V0ApiError ? error.response.error.message : "Failed to fork chat", {
+        title: "Fork Failed",
+      });
     }
   };
 

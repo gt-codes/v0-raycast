@@ -1,5 +1,5 @@
 import { ActionPanel, Action, showToast, Toast, Form, useNavigation } from "@raycast/api";
-import { useForm } from "@raycast/utils";
+import { useForm, showFailureToast } from "@raycast/utils";
 import type { CreateMessageRequest } from "../types";
 import ChatDetail from "./ChatDetail";
 import { useActiveProfile } from "../hooks/useActiveProfile";
@@ -28,7 +28,9 @@ export default function AddMessage({ chatId, chatTitle, revalidateChats, scopeId
   const { handleSubmit, itemProps } = useForm<FormValues>({
     onSubmit: async (values) => {
       if (!activeProfileApiKey) {
-        showToast(Toast.Style.Failure, "API Key not available. Please set it in Preferences or manage profiles.");
+        showFailureToast("API Key not available. Please set it in Preferences or manage profiles.", {
+          title: "Send Failed",
+        });
         return;
       }
 
@@ -87,12 +89,12 @@ export default function AddMessage({ chatId, chatTitle, revalidateChats, scopeId
 
         return;
       } catch (error) {
-        toast.style = Toast.Style.Failure;
-        toast.title = "Send Failed";
         if (error instanceof V0ApiError) {
-          toast.message = error.message;
+          showFailureToast(error.message, { title: "Send Failed" });
         } else {
-          toast.message = `Failed to send message: ${error instanceof Error ? error.message : String(error)}`;
+          showFailureToast(`Failed to send message: ${error instanceof Error ? error.message : String(error)}`, {
+            title: "Send Failed",
+          });
         }
         throw error;
       }
