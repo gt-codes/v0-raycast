@@ -1,4 +1,4 @@
-import { ActionPanel, Form, Action, showToast, Toast, Icon, useNavigation } from "@raycast/api";
+import { ActionPanel, Form, Action, showToast, Toast, Icon, useNavigation, Keyboard } from "@raycast/api";
 import { useForm } from "@raycast/utils";
 import type { Project } from "./types";
 import { useActiveProfile } from "./hooks/useActiveProfile";
@@ -111,13 +111,13 @@ export default function CreateProjectCommand(props: CreateProjectCommandProps) {
             title="Add Environment Variable"
             onAction={handleAddEnvironmentVariable}
             icon={Icon.Plus}
-            shortcut={{ modifiers: ["cmd"], key: "e" }}
+            shortcut={Keyboard.Shortcut.Common.New}
           />
           <Action
             title="Remove Last Environment Variable"
             onAction={handleRemoveLastEnvironmentVariable}
             icon={Icon.Minus}
-            shortcut={{ modifiers: ["cmd"], key: "r" }}
+            shortcut={Keyboard.Shortcut.Common.Remove}
           />
         </ActionPanel>
       }

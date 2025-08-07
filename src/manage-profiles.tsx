@@ -9,6 +9,7 @@ import {
   getPreferenceValues,
   confirmAlert,
   Alert,
+  Keyboard,
 } from "@raycast/api";
 import { useEffect, useState } from "react";
 import { useCachedState } from "@raycast/utils";
@@ -251,14 +252,14 @@ export default function ManageProfiles() {
                   title="Rename Profile"
                   target={<RenameProfileForm profile={profile} onUpdate={handleProfileUpdate} />}
                   icon={Icon.Pencil}
-                  shortcut={{ modifiers: ["cmd"], key: "r" }}
+                  shortcut={Keyboard.Shortcut.Common.Edit}
                 />
                 <ActionPanel.Section>
                   <Action.Push
                     title="Add New Profile"
                     target={<AddProfileForm onAdd={handleAddProfile} />}
                     icon={Icon.Plus}
-                    shortcut={{ modifiers: ["cmd"], key: "n" }}
+                    shortcut={Keyboard.Shortcut.Common.New}
                   />
                   {profile.id !== "default" && (
                     <Action
@@ -266,7 +267,7 @@ export default function ManageProfiles() {
                       onAction={() => handleDeleteProfile(profile.id)}
                       icon={Icon.Trash}
                       style={Action.Style.Destructive}
-                      shortcut={{ modifiers: ["cmd"], key: "d" }}
+                      shortcut={Keyboard.Shortcut.Common.Remove}
                     />
                   )}
                 </ActionPanel.Section>
@@ -284,7 +285,7 @@ export default function ManageProfiles() {
               title="Add New Profile"
               target={<AddProfileForm onAdd={handleAddProfile} />}
               icon={Icon.Plus}
-              shortcut={{ modifiers: ["cmd"], key: "n" }}
+              shortcut={Keyboard.Shortcut.Common.New}
             />
           </ActionPanel>
         }

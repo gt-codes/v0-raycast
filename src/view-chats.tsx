@@ -1,4 +1,4 @@
-import { ActionPanel, Detail, List, Action, Icon, showToast, Toast, confirmAlert } from "@raycast/api";
+import { ActionPanel, Detail, List, Action, Icon, showToast, Toast, confirmAlert, Keyboard } from "@raycast/api";
 import type { ChatSummary, FindChatsResponse, ForkChatResponse, ProjectChatsResponse } from "./types";
 import ChatDetail from "./components/ChatDetail";
 import AddMessage from "./components/AddMessage";
@@ -240,7 +240,7 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                   title="Add Message"
                   target={<AddMessage chatId={chat.id} chatTitle={chat.name} revalidateChats={mutate} />}
                   icon={Icon.Plus}
-                  shortcut={{ modifiers: ["cmd"], key: "n" }}
+                  shortcut={Keyboard.Shortcut.Common.New}
                 />
                 {chat.latestVersion?.id && (
                   <Action
@@ -293,7 +293,7 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                     url={`https://v0.dev/chat/${chat.id}`}
                     title="View Chat in Browser"
                     icon={Icon.Globe}
-                    shortcut={{ modifiers: ["cmd"], key: "b" }}
+                    shortcut={Keyboard.Shortcut.Common.Open}
                   />
                   <Action.Push
                     title="View Metadata"
@@ -305,7 +305,7 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                     content={chat.id}
                     title="Copy Chat ID"
                     icon={Icon.CopyClipboard}
-                    shortcut={{ modifiers: ["cmd"], key: "c" }}
+                    shortcut={Keyboard.Shortcut.Common.Copy}
                   />
                   {chat.projectId && !!getProjectName(chat.projectId) && (
                     <Action.CopyToClipboard
@@ -330,7 +330,7 @@ export default function Command(props: { scopeId?: string; projectId?: string })
                         deleteChat(chat.id, chat.name || "Untitled Chat");
                       }
                     }}
-                    shortcut={{ modifiers: ["cmd"], key: "d" }}
+                    shortcut={Keyboard.Shortcut.Common.Remove}
                   />
                 </ActionPanel.Section>
               </ActionPanel>
