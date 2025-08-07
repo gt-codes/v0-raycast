@@ -25,17 +25,17 @@
   "license": "MIT",
   "commands": [
     {
-      "name": "view-chats",
-      "title": "View Chats",
-      "subtitle": "v0",
-      "description": "View and manage your chats",
-      "mode": "view"
-    },
-    {
       "name": "new-chat",
       "title": "New Chat",
       "subtitle": "v0",
       "description": "Create a new chat",
+      "mode": "view"
+    },
+    {
+      "name": "view-chats",
+      "title": "View Chats",
+      "subtitle": "v0",
+      "description": "View and manage your chats",
       "mode": "view"
     },
     {
