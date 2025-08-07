@@ -5,15 +5,10 @@ import { useProjects } from "./hooks/useProjects";
 import { useActiveProfile } from "./hooks/useActiveProfile";
 import { useScopes } from "./hooks/useScopes";
 import { v0ApiFetcher, V0ApiError } from "./lib/v0-api-utils";
-import * as fs from "fs/promises";
-import * as path from "path";
+import { readFilesFromPaths, type FileContent } from "./lib/file-utils";
+
 import ChatDetail from "./components/ChatDetail";
 import type { InitializeChatResponse } from "./types";
-
-interface FileContent {
-  name: string;
-  content: string;
-}
 
 interface BaseInitializationRequestBody {
   name: string;
@@ -94,17 +89,9 @@ export default function Command() {
 
         if (formValues.initializationType === "files") {
           if (!formValues.files || formValues.files.length === 0) {
-            throw new Error("At least one file is required for file upload initialization.");
+            throw new Error("At least one file or directory is required for file upload initialization.");
           }
-          const filesContent: FileContent[] = await Promise.all(
-            formValues.files.map(async (filePath) => {
-              const content = await fs.readFile(filePath, "utf-8");
-              return {
-                name: path.basename(filePath),
-                content: content,
-              };
-            }),
-          );
+          const filesContent = await readFilesFromPaths(formValues.files);
           requestBody = {
             name: formValues.name,
             chatPrivacy: formValues.chatPrivacy,
