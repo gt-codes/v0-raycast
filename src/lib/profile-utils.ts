@@ -3,7 +3,6 @@ import type { Profile } from "../types";
 
 interface Preferences {
   apiKey?: string;
-  defaultScope?: string;
 }
 
 interface ActiveProfileDetails {
@@ -31,10 +30,6 @@ export function getActiveProfileDetails(
   // Fallback to the API key from preferences if no active profile or profile not found
   if (!apiKey) {
     apiKey = preferences.apiKey;
-    // If no active profile is set, and we're falling back to preferences, also use preference defaultScope
-    if (!activeProfileId) {
-      defaultScope = preferences.defaultScope || null;
-    }
   }
 
   return { apiKey, defaultScope };
